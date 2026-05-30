@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Air Draw ✦</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#111;font-family:'Inter',sans-serif;overflow:hidden}
+
+/* ── SPLASH ── */
+#splash{
+  position:fixed;inset:0;z-index:999;
+  background:#111;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+}
+#splash.hide{display:none}
+
+.splash-logo{
+  font-size:48px;font-weight:900;letter-spacing:-1px;
+  margin-bottom:6px;
+}
+.splash-logo span{color:#3dffa0}
+.splash-sub{
+  font-size:13px;color:rgba(255,255,255,0.38);letter-spacing:0.5px;
+  margin-bottom:36px;
+}
+
+.gesture-row{
+  display:flex;gap:12px;margin-bottom:36px;
+}
+.g-card{
+  width:82px;padding:14px 8px 12px;
+  background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.g-card .emoji{font-size:30px;line-height:1}
+.g-card .g-name{font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.35);text-transform:uppercase}
+.g-card .g-action{font-size:11px;font-weight:700;color:#3dffa0}
+
+#start-btn{
+  padding:15px 52px;
+  background:#3dffa0;border:none;border-radius:100px;
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;
+  color:#111;cursor:pointer;
+  box-shadow:0 0 32px rgba(61,255,160,0.45);
+  transition:transform 0.15s,box-shadow 0.15s;
+}
+#start-btn:active{transform:scale(0.97)}
+#start-btn:hover{box-shadow:0 0 48px rgba(61,255,160,0.65)}
+
+/* ── MAIN ── */
+#app{position:relative;width:100%;height:100dvh}
+video{display:none}
+
+canvas{position:absolute;inset:0;width:100%;height:100%}
+#cam-canvas{z-index:1}
+#draw-canvas{z-index:2;pointer-events:none}
+#ui-canvas{z-index:3;pointer-events:none}
+
+/* ── TOP BAR ── */
+#topbar{
+  position:absolute;top:0;left:0;right:0;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px 0;
+}
+.logo{font-size:18px;font-weight:900;letter-spacing:-0.5px}
+.logo span{color:#3dffa0}
+#cam-status{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.5px;
+}
+.cam-dot{width:7px;height:7px;border-radius:50%;background:#444}
+.cam-dot.live{background:#3dffa0;box-shadow:0 0 8px #3dffa0;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── MODE BADGE ── */
+#mode-badge{
+  position:absolute;bottom:90px;left:50%;transform:translateX(-50%);
+  z-index:10;
+  padding:8px 20px;border-radius:100px;
+  font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.1);
+  color:#fff;
+  transition:color 0.2s;
+  pointer-events:none;
+}
+#mode-badge.drawing{color:#3dffa0;border-color:rgba(61,255,160,0.3)}
+#mode-badge.erasing{color:#ff5e5e;border-color:rgba(255,94,94,0.3)}
+#mode-badge.paused{color:rgba(255,255,255,0.45)}
+
+/* ── BOTTOM TOOLBAR ── */
+#toolbar{
+  position:absolute;bottom:0;left:0;right:0;z-index:10;
+  padding:14px 16px 20px;
+  background:linear-gradient(0deg,rgba(10,10,10,0.95) 0%,rgba(10,10,10,0.8) 70%,transparent 100%);
+  display:flex;align-items:center;gap:10px;
+  backdrop-filter:blur(4px);
+}
+
+.color-btn{
+  width:30px;height:30px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;flex-shrink:0;transition:transform 0.15s,border-color 0.15s;
+}
+.color-btn.active{border-color:#fff;transform:scale(1.2)}
+
+.sep{width:1px;height:28px;background:rgba(255,255,255,0.12);flex-shrink:0}
+
+.size-btn{
+  padding:6px 13px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);
+  background:transparent;color:rgba(255,255,255,0.55);
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;
+}
+.size-btn.active{background:#3dffa0;border-color:#3dffa0;color:#111}
+
+.spacer{flex:1}
+
+.action-btn{
+  padding:7px 14px;border-radius:8px;border:none;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;letter-spacing:0.3px;
+}
+.action-btn.clear{background:rgba(255,70,70,0.15);color:#ff5e5e;border:1.5px solid rgba(255,70,70,0.25)}
+.action-btn.clear:hover{background:rgba(255,70,70,0.28)}
+.action-btn.save{background:#3dffa0;color:#111}
+.action-btn.save:hover{box-shadow:0 0 16px rgba(61,255,160,0.5)}
+
+/* ── CURSOR ── */
+#cursor-dot{
+  position:absolute;z-index:15;pointer-events:none;
+  width:16px;height:16px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  display:none;
+  transition:width 0.1s,height 0.1s,background 0.1s,box-shadow 0.1s;
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">Air <span>Draw</span> ✦</div>
+  <div class="splash-sub">Draw in thin air with your hands</div>
+
+  <div class="gesture-row">
+    <div class="g-card">
+      <div class="emoji">☝️</div>
+      <div class="g-action">DRAW</div>
+      <div class="g-name">Index Up</div>
+    </div>
+    <div class="g-card">
+      <div class="emoji">✊</div>
+      <div class="g-action">PAUSE</div>
+      <div class="g-name">Fist</div>
+    </div>
+    <div class="g-card">
+      <div class="emoji">🖐</div>
+      <div class="g-action">ERASE</div>
+      <div class="g-name">Open Palm</div>
+    </div>
+  </div>
+
+  <button id="start-btn">Start Drawing ✦</button>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <video id="webcam" playsinline autoplay muted></video>
+  <canvas id="cam-canvas"></canvas>
+  <canvas id="draw-canvas"></canvas>
+  <div id="cursor-dot"></div>
+
+  <!-- TOP -->
+  <div id="topbar">
+    <div class="logo">Air <span>Draw</span> ✦</div>
+    <div id="cam-status"><div class="cam-dot" id="cam-dot"></div><span id="cam-label">Waiting for cam</span></div>
+  </div>
+
+  <!-- MODE -->
+  <div id="mode-badge" class="paused">— PAUSED —</div>
+
+  <!-- BOTTOM TOOLBAR -->
+  <div id="toolbar">
+    <div class="color-btn active" data-color="#3dffa0" style="background:#3dffa0"></div>
+    <div class="color-btn" data-color="#ff4466" style="background:#ff4466"></div>
+    <div class="color-btn" data-color="#4488ff" style="background:#4488ff"></div>
+    <div class="color-btn" data-color="#ffcc00" style="background:#ffcc00"></div>
+    <div class="color-btn" data-color="#cc44ff" style="background:#cc44ff"></div>
+    <div class="color-btn" data-color="#ffffff" style="background:#ffffff"></div>
+
+    <div class="sep"></div>
+
+    <button class="size-btn active" data-size="4">S</button>
+    <button class="size-btn" data-size="9">M</button>
+    <button class="size-btn" data-size="18">L</button>
+
+    <div class="spacer"></div>
+
+    <button class="action-btn clear" id="btn-clear">Clear</button>
+    <button class="action-btn save" id="btn-save">Save</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════
+const COLORS = { green:'#3dffa0', red:'#ff4466', blue:'#4488ff', yellow:'#ffcc00', purple:'#cc44ff', white:'#ffffff' };
+const SMOOTH_FACTOR = 0.25;       // lower = smoother/slower, higher = more responsive
+const GESTURE_HOLD  = 5;          // frames a gesture must be stable before switching
+const ERASE_RADIUS  = 40;
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let W = 0, H = 0;
+let drawColor = '#3dffa0';
+let brushSize = 4;
+let mode      = 'pause'; // draw | pause | erase
+
+// Strokes: [{color, size, points:[{x,y}]}]
+let strokes      = [];
+let activeStroke = null;
+let lastPt       = null;
+
+// Smoothed cursor position
+let cx = 0, cy = 0;
+
+// Gesture debounce
+let pendingGesture = null;
+let gestureFrames  = 0;
+
+// Video frame ref
+let videoFrame = null;
+
+// ═══════════════════════════════════════════════
+//  DOM
+// ═══════════════════════════════════════════════
+const appEl     = document.getElementById('app');
+const splashEl  = document.getElementById('splash');
+const camCanvas = document.getElementById('cam-canvas');
+const drawCanvas= document.getElementById('draw-canvas');
+const camCtx    = camCanvas.getContext('2d');
+const drawCtx   = drawCanvas.getContext('2d');
+const video     = document.getElementById('webcam');
+const cursorEl  = document.getElementById('cursor-dot');
+const modeBadge = document.getElementById('mode-badge');
+const camDot    = document.getElementById('cam-dot');
+const camLabel  = document.getElementById('cam-label');
+
+// ═══════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  camCanvas.width  = drawCanvas.width  = W;
+  camCanvas.height = drawCanvas.height = H;
+  redrawStrokes();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ═══════════════════════════════════════════════
+//  TOOLBAR WIRING
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.color-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    drawColor = btn.dataset.color;
+  });
+});
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    brushSize = +btn.dataset.size;
+  });
+});
+document.getElementById('btn-clear').addEventListener('click', () => {
+  strokes=[]; activeStroke=null; lastPt=null;
+  drawCtx.clearRect(0,0,W,H);
+});
+document.getElementById('btn-save').addEventListener('click', saveImage);
+
+// ═══════════════════════════════════════════════
+//  DRAW ENGINE
+// ═══════════════════════════════════════════════
+function redrawStrokes() {
+  drawCtx.clearRect(0,0,W,H);
+  strokes.forEach(paintStroke);
+  if (activeStroke) paintStroke(activeStroke);
+}
+
+function paintStroke(s) {
+  const pts = s.points;
+  if (pts.length < 2) return;
+  drawCtx.save();
+  drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round';
+
+  // GLOW pass
+  drawCtx.globalAlpha    = 0.45;
+  drawCtx.lineWidth      = s.size * 2.8;
+  drawCtx.strokeStyle    = s.color;
+  drawCtx.filter         = `blur(${s.size*1.2}px)`;
+  tracePath(pts);
+  drawCtx.stroke();
+
+  // CORE pass
+  drawCtx.globalAlpha    = 1;
+  drawCtx.filter         = 'none';
+  drawCtx.lineWidth      = s.size;
+  drawCtx.strokeStyle    = s.color;
+  tracePath(pts);
+  drawCtx.stroke();
+
+  // WHITE core
+  drawCtx.lineWidth   = s.size * 0.28;
+  drawCtx.strokeStyle = 'rgba(255,255,255,0.7)';
+  tracePath(pts);
+  drawCtx.stroke();
+
+  drawCtx.restore();
+}
+
+function tracePath(pts) {
+  drawCtx.beginPath();
+  drawCtx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1;i<pts.length;i++) {
+    // smooth with quadratic bezier
+    const mx = (pts[i-1].x + pts[i].x)/2;
+    const my = (pts[i-1].y + pts[i].y)/2;
+    drawCtx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, mx, my);
+  }
+  drawCtx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+}
+
+// ═══════════════════════════════════════════════
+//  ERASE
+// ═══════════════════════════════════════════════
+function eraseAt(ex, ey) {
+  const r2 = ERASE_RADIUS * ERASE_RADIUS;
+  // Remove points within radius, splitting strokes
+  strokes = strokes.flatMap(s => {
+    const segments = [];
+    let cur = [];
+    for (const p of s.points) {
+      if ((p.x-ex)**2+(p.y-ey)**2 < r2) {
+        if (cur.length > 1) segments.push({...s, points:[...cur]});
+        cur = [];
+      } else cur.push(p);
+    }
+    if (cur.length > 1) segments.push({...s, points:[...cur]});
+    return segments;
+  });
+  redrawStrokes();
+}
+
+// ═══════════════════════════════════════════════
+//  SAVE
+// ═══════════════════════════════════════════════
+function saveImage() {
+  const tmp = document.createElement('canvas');
+  tmp.width = W; tmp.height = H;
+  const tc = tmp.getContext('2d');
+  // mirror webcam
+  tc.save(); tc.scale(-1,1); tc.drawImage(video,-W,0,W,H); tc.restore();
+  tc.fillStyle = 'rgba(0,0,0,0.3)'; tc.fillRect(0,0,W,H);
+  tc.drawImage(drawCanvas,0,0);
+  const a=document.createElement('a');
+  a.href=tmp.toDataURL('image/png');
+  a.download='airdraw.png'; a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER LOOP — webcam bg
+// ═══════════════════════════════════════════════
+function renderCam() {
+  requestAnimationFrame(renderCam);
+  camCtx.clearRect(0,0,W,H);
+  if (videoFrame) {
+    camCtx.save();
+    camCtx.scale(-1,1);
+    camCtx.drawImage(videoFrame,-W,0,W,H);
+    camCtx.restore();
+    // soft dark overlay for readability
+    camCtx.fillStyle = 'rgba(0,0,0,0.22)';
+    camCtx.fillRect(0,0,W,H);
+  } else {
+    camCtx.fillStyle = '#111';
+    camCtx.fillRect(0,0,W,H);
+  }
+
+  // Erase ring visualisation
+  if (mode === 'erase') {
+    camCtx.save();
+    camCtx.beginPath();
+    camCtx.arc(cx,cy,ERASE_RADIUS,0,Math.PI*2);
+    camCtx.strokeStyle = 'rgba(255,94,94,0.8)';
+    camCtx.lineWidth   = 2;
+    camCtx.stroke();
+    camCtx.fillStyle   = 'rgba(255,94,94,0.12)';
+    camCtx.fill();
+    camCtx.restore();
+  }
+}
+renderCam();
+
+// ═══════════════════════════════════════════════
+//  GESTURE DETECTION (stable debounced)
+// ═══════════════════════════════════════════════
+function detectRawGesture(lm) {
+  // Finger extended: tip.y < pip.y  (screen coords, y increases downward)
+  // TIP ids: thumb=4, index=8, middle=12, ring=16, pinky=20
+  // PIP ids: thumb=3, index=6, middle=10, ring=14, pinky=18
+  // MCP ids: index=5, middle=9, ring=13, pinky=17
+
+  const indexUp  = lm[8].y  < lm[6].y;
+  const middleUp = lm[12].y < lm[10].y;
+  const ringUp   = lm[16].y < lm[14].y;
+  const pinkyUp  = lm[20].y < lm[18].y;
+
+  const extCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
+
+  if (extCount >= 3) return 'erase';   // 🖐 open palm
+  if (!indexUp && extCount === 0) return 'pause'; // ✊ fist
+  if (indexUp && extCount === 1) return 'draw';   // ☝️ index only
+  return 'pause'; // anything else → pause
+}
+
+// Debounced gesture setter
+function processGesture(raw) {
+  if (raw === pendingGesture) {
+    gestureFrames++;
+    if (gestureFrames >= GESTURE_HOLD && raw !== mode) {
+      commitGesture(raw);
+    }
+  } else {
+    pendingGesture = raw;
+    gestureFrames  = 1;
+  }
+}
+
+function commitGesture(g) {
+  if (g === mode) return;
+  // commit previous stroke when leaving draw mode
+  if (mode === 'draw' && activeStroke) {
+    if (activeStroke.points.length > 1) strokes.push(activeStroke);
+    activeStroke = null; lastPt = null;
+  }
+  mode = g;
+  updateModeUI();
+}
+
+function updateModeUI() {
+  cursorEl.style.display = 'block';
+  modeBadge.className = 'paused';
+  if (mode === 'draw') {
+    modeBadge.textContent = '✏️  DRAWING';
+    modeBadge.className   = 'drawing';
+    cursorEl.style.width  = cursorEl.style.height = '14px';
+    cursorEl.style.background = drawColor;
+    cursorEl.style.boxShadow  = `0 0 12px ${drawColor}, 0 0 24px ${drawColor}`;
+    cursorEl.style.border     = 'none';
+  } else if (mode === 'erase') {
+    modeBadge.textContent = '🧹  ERASE MODE';
+    modeBadge.className   = 'erasing';
+    cursorEl.style.width  = cursorEl.style.height = '80px';
+    cursorEl.style.background = 'rgba(255,94,94,0.12)';
+    cursorEl.style.boxShadow  = '0 0 0 2px rgba(255,94,94,0.7)';
+    cursorEl.style.border     = 'none';
+  } else {
+    modeBadge.textContent = '⏸  PAUSED';
+    cursorEl.style.width  = cursorEl.style.height = '14px';
+    cursorEl.style.background = 'transparent';
+    cursorEl.style.boxShadow  = '0 0 0 2px rgba(255,255,255,0.5)';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  INDEX FINGERTIP (mirrored x)
+// ═══════════════════════════════════════════════
+function fingerTip(lm) {
+  return { x:(1-lm[8].x)*W, y:lm[8].y*H };
+}
+
+// Palm centre for erase (mirrored)
+function palmCentre(lm) {
+  const ids = [0,5,9,13,17];
+  let x=0,y=0;
+  ids.forEach(i=>{ x+=lm[i].x; y+=lm[i].y; });
+  return { x:(1-x/ids.length)*W, y:(y/ids.length)*H };
+}
+
+// ═══════════════════════════════════════════════
+//  MEDIAPIPE
+// ═══════════════════════════════════════════════
+function initHands() {
+  const hands = new Hands({
+    locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.75,
+    minTrackingConfidence:  0.70,
+  });
+
+  hands.onResults(res => {
+    videoFrame = res.image;
+
+    if (!res.multiHandLandmarks || res.multiHandLandmarks.length === 0) {
+      // No hand — commit stroke, reset
+      if (mode === 'draw' && activeStroke) {
+        if (activeStroke.points.length > 1) strokes.push(activeStroke);
+        activeStroke = null; lastPt = null;
+      }
+      mode = 'pause';
+      pendingGesture = null; gestureFrames = 0;
+      updateModeUI();
+      cursorEl.style.display = 'none';
+      modeBadge.textContent  = '— PAUSED —';
+      return;
+    }
+
+    const lm  = res.multiHandLandmarks[0];
+    const raw = detectRawGesture(lm);
+    processGesture(raw);
+
+    // Smooth cursor position
+    let target;
+    if (mode === 'erase') target = palmCentre(lm);
+    else                  target = fingerTip(lm);
+
+    cx = cx + (target.x - cx) * SMOOTH_FACTOR;
+    cy = cy + (target.y - cy) * SMOOTH_FACTOR;
+
+    // Move cursor element
+    cursorEl.style.left = cx + 'px';
+    cursorEl.style.top  = cy + 'px';
+
+    // Update cursor color dynamically
+    if (mode === 'draw') {
+      cursorEl.style.background = drawColor;
+      cursorEl.style.boxShadow  = `0 0 12px ${drawColor}, 0 0 24px ${drawColor}`;
+    }
+
+    // ── DRAW ──
+    if (mode === 'draw') {
+      if (!activeStroke) {
+        activeStroke = { color:drawColor, size:brushSize, points:[] };
+      }
+      // Only add point if moved enough (reduces jagged lines)
+      const MIN_DIST = 3;
+      if (!lastPt || Math.hypot(cx-lastPt.x, cy-lastPt.y) > MIN_DIST) {
+        activeStroke.points.push({x:cx, y:cy});
+        lastPt = {x:cx, y:cy};
+        redrawStrokes();
+      }
+    }
+
+    // ── ERASE ──
+    if (mode === 'erase') {
+      eraseAt(cx, cy);
+    }
+
+    // ── PAUSE ── nothing extra needed
+  });
+
+  const cam = new Camera(video, {
+    onFrame: async () => { await hands.send({image:video}); },
+    width:1280, height:720,
+  });
+
+  cam.start()
+    .then(() => {
+      camDot.classList.add('live');
+      camLabel.textContent = 'Camera live';
+    })
+    .catch(err => {
+      camLabel.textContent = 'Camera denied';
+      console.error(err);
+    });
+}
+
+// ═══════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════
+document.getElementById('start-btn').addEventListener('click', () => {
+  splashEl.classList.add('hide');
+  appEl.style.display = 'block';
+  initHands();
+});
+</script>
+</body>
+</html>
