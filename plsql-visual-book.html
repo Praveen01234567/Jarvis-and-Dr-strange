@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL/SQL Codex — Cursors, Ref Cursors & Interview Drills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#101a2e;
+  --panel2:#0d1626;
+  --line:#21314f;
+  --amber:#ffb454;
+  --cyan:#5ee6d0;
+  --text:#e8edf5;
+  --muted:#8a97ad;
+  --green:#4ade80;
+  --red:#ff7a7a;
+  --violet:#b6a4ff;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  line-height:1.55;
+}
+::selection{background:var(--amber);color:#1a1306;}
+
+/* ---------- layout ---------- */
+.shell{display:flex;min-height:100vh;}
+.sidebar{
+  width:280px;flex-shrink:0;
+  background:var(--panel2);
+  border-right:1px solid var(--line);
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;
+  padding:24px 0 40px;
+}
+.brand{
+  padding:0 22px 18px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:10px;
+}
+.brand .mark{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--amber);font-size:12px;letter-spacing:.12em;
+}
+.brand h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:21px;margin:6px 0 4px;font-weight:700;
+}
+.brand p{font-size:12.5px;color:var(--muted);margin:0;}
+.navlist{list-style:none;margin:0;padding:0;}
+.navlist a{
+  display:flex;gap:10px;align-items:baseline;
+  padding:9px 22px;color:var(--muted);
+  text-decoration:none;font-size:13.5px;
+  border-left:2px solid transparent;
+  transition:.15s;
+}
+.navlist a .ln{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--violet);font-size:11px;opacity:.8;width:20px;flex-shrink:0;
+}
+.navlist a:hover{background:rgba(255,180,84,.06);color:var(--text);}
+.navlist a.active{border-left-color:var(--amber);color:var(--amber);background:rgba(255,180,84,.07);}
+.navlist .grp{
+  padding:16px 22px 6px;font-size:10.5px;letter-spacing:.14em;
+  color:var(--muted);text-transform:uppercase;
+}
+
+main{flex:1;min-width:0;padding:48px 56px 120px;max-width:980px;}
+
+/* ---------- hero ---------- */
+.hero{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:radial-gradient(circle at 18% 20%, rgba(255,180,84,.10), transparent 55%),
+             radial-gradient(circle at 85% 0%, rgba(94,230,208,.08), transparent 50%),
+             var(--panel);
+  padding:40px 38px;margin-bottom:54px;position:relative;overflow:hidden;
+}
+.hero .tag{font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:12.5px;letter-spacing:.1em;}
+.hero h1{
+  font-family:'Space Grotesk',sans-serif;font-size:40px;line-height:1.12;
+  margin:14px 0 14px;font-weight:700;
+  background:linear-gradient(90deg,#fff,var(--amber) 70%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  max-width:640px;
+}
+.hero p{color:var(--muted);max-width:560px;font-size:15px;}
+.hero .prompt{
+  margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:13.5px;color:var(--green);
+  display:flex;gap:8px;align-items:center;
+}
+.hero .prompt::before{content:"SQL>";color:var(--muted);}
+.caret{display:inline-block;width:8px;height:15px;background:var(--green);animation:blink 1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+
+/* ---------- chapter ---------- */
+.chapter{
+  border-top:1px solid var(--line);
+  padding-top:46px;margin-top:46px;
+  scroll-margin-top:24px;
+}
+.chapter .eyebrow{
+  font-family:'JetBrains Mono',monospace;color:var(--violet);font-size:12px;letter-spacing:.1em;
+}
+.chapter h2{
+  font-family:'Space Grotesk',sans-serif;font-size:27px;margin:8px 0 14px;font-weight:700;
+}
+.chapter .lede{color:var(--muted);font-size:15px;max-width:760px;margin-bottom:22px;}
+.chapter .lede b{color:var(--text);font-weight:600;}
+
+.callout{
+  border:1px solid var(--line);border-left:3px solid var(--amber);
+  background:rgba(255,180,84,.05);
+  padding:14px 18px;border-radius:0 8px 8px 0;font-size:13.6px;color:#f0d9b0;
+  margin:18px 0;
+}
+.callout.tip{border-left-color:var(--cyan);background:rgba(94,230,208,.05);color:#cdf3ec;}
+.callout.warn{border-left-color:var(--red);background:rgba(255,122,122,.06);color:#ffd6d6;}
+
+/* ---------- code block ---------- */
+.codewrap{
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  background:#0a1322;margin:18px 0;
+}
+.codewrap .bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 14px;background:#0d1729;border-bottom:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);
+}
+.dots{display:flex;gap:6px;}
+.dots span{width:8px;height:8px;border-radius:50%;background:#2a3a5c;}
+pre{
+  margin:0;padding:16px 18px;overflow-x:auto;
+  font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;
+}
+.kw{color:var(--amber);}
+.tp{color:var(--cyan);}
+.str{color:var(--green);}
+.cm{color:#5d6d8c;font-style:italic;}
+.fn{color:var(--violet);}
+
+/* ---------- interactive panel ---------- */
+.lab{
+  border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);overflow:hidden;margin:20px 0 6px;
+}
+.lab .labhead{
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.lab .labhead .t{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);letter-spacing:.06em;}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);}
+.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+.controls input[type=number], .controls input[type=text]{
+  background:#0a1322;border:1px solid var(--line);color:var(--text);
+  border-radius:6px;padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:13px;width:110px;
+}
+button.run{
+  background:var(--amber);color:#1a1306;border:none;border-radius:7px;
+  padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;transition:.15s;
+}
+button.run:hover{filter:brightness(1.08);transform:translateY(-1px);}
+button.ghost{
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  border-radius:7px;padding:9px 14px;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;
+}
+button.ghost:hover{color:var(--text);border-color:var(--amber);}
+
+.gridtwo{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+@media(max-width:760px){.gridtwo{grid-template-columns:1fr;}}
+.tablewrap{padding:14px 16px;border-right:1px solid var(--line);}
+@media(max-width:760px){.tablewrap{border-right:none;border-bottom:1px solid var(--line);}}
+.tablewrap .lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;margin-bottom:8px;text-transform:uppercase;}
+table.emp{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.3px;}
+table.emp th{text-align:left;color:var(--muted);font-weight:500;padding:5px 6px;border-bottom:1px solid var(--line);}
+table.emp td{padding:4px 6px;border-bottom:1px solid #16213a;}
+table.emp input{
+  background:#0a1322;border:1px solid var(--line);color:var(--amber);
+  border-radius:5px;padding:3px 6px;width:70px;font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.dirty{outline:1px solid var(--cyan);}
+
+.console{
+  background:#070d18;padding:14px 16px;
+  font-family:'JetBrains Mono',monospace;font-size:12.6px;
+  min-height:160px;max-height:340px;overflow-y:auto;
+  white-space:pre-wrap;color:var(--green);
+}
+.console .ln-out{color:var(--text);}
+.console .ln-meta{color:var(--muted);}
+.console .ln-warn{color:var(--red);}
+.console .ln-head{color:var(--cyan);}
+.console .placeholder{color:var(--muted);font-style:italic;}
+
+/* ---------- interview cards ---------- */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
+@media(max-width:760px){.qa-grid{grid-template-columns:1fr;}}
+.qa{
+  border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  padding:16px 18px;cursor:pointer;position:relative;transition:.15s;
+}
+.qa:hover{border-color:var(--amber);}
+.qa .q{font-size:13.8px;font-weight:600;color:var(--text);padding-right:20px;}
+.qa .q::before{content:"Q";color:var(--amber);font-family:'JetBrains Mono',monospace;margin-right:8px;}
+.qa .a{
+  max-height:0;overflow:hidden;transition:max-height .25s ease;
+  font-size:13px;color:var(--muted);margin-top:0;
+}
+.qa.open .a{max-height:400px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+.qa .a::before{content:"A · ";color:var(--cyan);font-weight:600;}
+.qa .chev{position:absolute;right:16px;top:16px;color:var(--muted);font-size:13px;transition:.2s;}
+.qa.open .chev{transform:rotate(45deg);color:var(--amber);}
+
+/* ---------- cheat table ---------- */
+.cheat{width:100%;border-collapse:collapse;margin:18px 0;font-size:13px;}
+.cheat th{
+  text-align:left;background:var(--panel2);color:var(--cyan);
+  padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  letter-spacing:.05em;border-bottom:1px solid var(--line);
+}
+.cheat td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--text);vertical-align:top;}
+.cheat tr:hover td{background:rgba(255,180,84,.04);}
+.cheat td.k{font-family:'JetBrains Mono',monospace;color:var(--amber);white-space:nowrap;}
+
+footer{
+  border-top:1px solid var(--line);margin-top:60px;padding-top:24px;
+  color:var(--muted);font-size:12.5px;
+}
+
+/* progress dot */
+.progress{position:fixed;right:18px;top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);padding:6px 10px;border-radius:20px;z-index:50;display:none;}
+@media(min-width:1200px){.progress{display:block;}}
+
+/* ---------- help button + modal ---------- */
+.help-fab{
+  position:fixed;right:22px;bottom:22px;z-index:80;
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--amber),#ff8a3d);
+  color:#1a1306;border:none;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;
+  box-shadow:0 8px 24px rgba(255,150,60,.35), 0 0 0 4px rgba(255,180,84,.12);
+  display:flex;align-items:center;justify-content:center;
+  animation:pulse 2.6s ease-in-out infinite;
+}
+.help-fab:hover{filter:brightness(1.07);transform:translateY(-2px);}
+@keyframes pulse{0%,100%{box-shadow:0 8px 24px rgba(255,150,60,.35),0 0 0 4px rgba(255,180,84,.12);}50%{box-shadow:0 8px 28px rgba(255,150,60,.5),0 0 0 9px rgba(255,180,84,.05);}}
+
+.help-overlay{
+  position:fixed;inset:0;background:rgba(5,9,18,.72);backdrop-filter:blur(3px);
+  z-index:90;display:none;align-items:center;justify-content:center;padding:24px;
+}
+.help-overlay.show{display:flex;}
+.help-modal{
+  width:100%;max-width:640px;max-height:84vh;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:30px 30px 26px;position:relative;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+}
+.help-modal h2{
+  font-family:'Space Grotesk',sans-serif;font-size:24px;margin:0 0 4px;
+  display:flex;align-items:center;gap:10px;
+}
+.help-modal .sub{color:var(--muted);font-size:13.5px;margin-bottom:20px;}
+.help-close{
+  position:absolute;top:18px;right:18px;background:transparent;border:1px solid var(--line);
+  color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;
+}
+.help-close:hover{color:var(--text);border-color:var(--amber);}
+.help-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;}
+.help-steps li{
+  display:flex;gap:14px;align-items:flex-start;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;
+}
+.help-steps .ico{font-size:22px;line-height:1;flex-shrink:0;width:30px;text-align:center;}
+.help-steps b{display:block;font-size:13.8px;color:var(--text);margin-bottom:2px;}
+.help-steps span.desc{font-size:13px;color:var(--muted);}
+.help-modal .kid-callout{
+  margin-top:20px;border:1px dashed var(--cyan);background:rgba(94,230,208,.06);
+  border-radius:10px;padding:14px 16px;font-size:13.4px;color:#cdf3ec;
+}
+.help-modal .kid-callout b{color:var(--cyan);}
+
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress">SQL&gt; chapter 01 / 12</div>
+
+<button class="help-fab" id="helpFab" title="How does this book work?" aria-label="Help">?</button>
+
+<div class="help-overlay" id="helpOverlay">
+  <div class="help-modal">
+    <button class="help-close" id="helpClose" aria-label="Close help">✕</button>
+    <h2>🧭 How this book works</h2>
+    <div class="sub">Explained so simply, a 10-year-old could follow it.</div>
+    <ul class="help-steps">
+      <li>
+        <div class="ico">📖</div>
+        <div><b>Read top to bottom, like a storybook.</b><span class="desc">Each numbered chapter on the left explains ONE idea — like "fetching one row at a time" or "saving a file." Click any chapter name to jump straight there.</span></div>
+      </li>
+      <li>
+        <div class="ico">💻</div>
+        <div><b>The dark code box is the "recipe."</b><span class="desc">It shows the real PL/SQL words a database understands — colored words like <span style="color:var(--amber)">SELECT</span> or <span style="color:var(--cyan)">VARCHAR2</span> are special keywords, just like ingredients in a recipe.</span></div>
+      </li>
+      <li>
+        <div class="ico">🧪</div>
+        <div><b>The "LIVE LAB" box is your playground.</b><span class="desc">It's a pretend mini-database sitting right inside the page. The table on the left is your data — you can type new names or numbers into it, exactly like editing cells in a game.</span></div>
+      </li>
+      <li>
+        <div class="ico">▶️</div>
+        <div><b>Press the orange RUN button.</b><span class="desc">This pretends to run the code on your data and prints what would happen in the black terminal box — just like magic, but it's really just following the recipe step by step.</span></div>
+      </li>
+      <li>
+        <div class="ico">🔁</div>
+        <div><b>Change a number, run it again!</b><span class="desc">Nothing breaks. Try silly values, big numbers, empty tables — see what happens. That's the best way to truly understand each rule.</span></div>
+      </li>
+      <li>
+        <div class="ico">🃏</div>
+        <div><b>Chapter 12 has flip-cards.</b><span class="desc">Tap a question card and it flips open to reveal the answer — like a memory game, perfect for quick interview revision.</span></div>
+      </li>
+      <li>
+        <div class="ico">📌</div>
+        <div><b>This little orange dot (bottom-right) is always here.</b><span class="desc">Tap it anytime you feel lost — it brings this same explanation back.</span></div>
+      </li>
+    </ul>
+    <div class="kid-callout">
+      <b>Think of it like this:</b> a <i>cursor</i> is just a finger pointing at rows in a table, one at a time. <i>BULK COLLECT</i> is grabbing a handful of rows instead of one. <i>FORALL</i> is updating that whole handful in one go instead of one-by-one. That's really it — everything else is just details!
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="mark">// FRESHER TRACK</div>
+      <h1>PL/SQL Codex</h1>
+      <p>A visual, runnable book for cracking your first PL/SQL interview.</p>
+    </div>
+    <ul class="navlist" id="navlist">
+      <li class="grp">Foundations</li>
+      <li><a href="#ch1"><span class="ln">01</span>Anatomy of a Block</a></li>
+      <li><a href="#ch2"><span class="ln">02</span>Implicit Cursors</a></li>
+      <li class="grp">Cursors</li>
+      <li><a href="#ch3"><span class="ln">03</span>Explicit Cursors</a></li>
+      <li><a href="#ch4"><span class="ln">04</span>Cursor FOR Loop</a></li>
+      <li><a href="#ch5"><span class="ln">05</span>Parameterized Cursors</a></li>
+      <li><a href="#ch6"><span class="ln">06</span>REF CURSOR</a></li>
+      <li class="grp">Performance</li>
+      <li><a href="#ch7"><span class="ln">07</span>BULK COLLECT</a></li>
+      <li><a href="#ch8"><span class="ln">08</span>FORALL</a></li>
+      <li><a href="#ch9"><span class="ln">09</span>Double-the-Salary Lab</a></li>
+      <li class="grp">I/O & Staging</li>
+      <li><a href="#ch10"><span class="ln">10</span>UTL_FILE</a></li>
+      <li><a href="#ch11"><span class="ln">11</span>Global Temp Tables</a></li>
+      <li class="grp">Get Hired</li>
+      <li><a href="#ch12"><span class="ln">12</span>Interview Drill Deck</a></li>
+      <li><a href="#ch13"><span class="ln">13</span>Cheat Sheet</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="tag">VISUAL · INTERACTIVE · FRESHER-FRIENDLY</div>
+      <h1>Learn PL/SQL the way you'll be asked it in an interview.</h1>
+      <p>Every chapter pairs a plain-English explanation with real PL/SQL syntax and a <b style="color:var(--text)">live terminal lab</b> — edit the employee table, change a multiplier, hit Run, and watch cursors actually iterate, BULK COLLECT actually batch, and FORALL actually fire in your browser.</p>
+      <div class="prompt">connected to FRESHER_DB as you<span class="caret"></span></div>
+    </div>
+
+    <!-- ===================== CHAPTER 1 ===================== -->
+    <section class="chapter" id="ch1">
+      <div class="eyebrow">CHAPTER 01</div>
+      <h2>Anatomy of a PL/SQL Block</h2>
+      <p class="lede">Every PL/SQL program — anonymous block, procedure, or function — follows the same four-part skeleton. Memorize this shape first; everything else (cursors, exceptions, bulk operations) just fills in these sections.</p>
+
+      <div class="codewrap">
+        <div class="bar"><span>anonymous_block.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="cm">-- variables, cursors, types declared here (optional section)</span>
+   v_emp_name  VARCHAR2(50);
+<span class="kw">BEGIN</span>
+   <span class="cm">-- executable statements go here (mandatory)</span>
+   <span class="kw">SELECT</span> ename <span class="kw">INTO</span> v_emp_name <span class="kw">FROM</span> emp <span class="kw">WHERE</span> empno = 7369;
+   DBMS_OUTPUT.PUT_LINE(<span class="str">'Hello, '</span> || v_emp_name);
+<span class="kw">EXCEPTION</span>
+   <span class="kw">WHEN</span> NO_DATA_FOUND <span class="kw">THEN</span>
+      DBMS_OUTPUT.PUT_LINE(<span class="str">'No such employee.'</span>);
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="callout tip">Interview one-liner: <b>"DECLARE is optional, BEGIN...END is mandatory, EXCEPTION is optional but recommended."</b> Say this and the interviewer knows you understand the structure, not just memorized code.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 2 ===================== -->
+    <section class="chapter" id="ch2">
+      <div class="eyebrow">CHAPTER 02</div>
+      <h2>Implicit Cursors — Oracle's Silent Worker</h2>
+      <p class="lede">Every single <b>INSERT, UPDATE, DELETE</b> or single-row <b>SELECT INTO</b> automatically gets a cursor created behind the scenes — Oracle calls it <b>SQL%</b>. You never OPEN/FETCH/CLOSE it; you just read its attributes right after the statement.</p>
+
+      <div class="codewrap">
+        <div class="bar"><span>implicit_cursor.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">BEGIN</span>
+   <span class="kw">UPDATE</span> emp <span class="kw">SET</span> sal = sal * 1.1 <span class="kw">WHERE</span> deptno = 10;
+
+   <span class="kw">IF</span> SQL%FOUND <span class="kw">THEN</span>
+      DBMS_OUTPUT.PUT_LINE(SQL%ROWCOUNT || <span class="str">' rows got a raise.'</span>);
+   <span class="kw">ELSE</span>
+      DBMS_OUTPUT.PUT_LINE(<span class="str">'No rows matched.'</span>);
+   <span class="kw">END IF</span>;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <table class="cheat">
+        <tr><th>Attribute</th><th>Meaning</th></tr>
+        <tr><td class="k">SQL%FOUND</td><td>TRUE if the statement affected ≥1 row</td></tr>
+        <tr><td class="k">SQL%NOTFOUND</td><td>TRUE if it affected 0 rows</td></tr>
+        <tr><td class="k">SQL%ROWCOUNT</td><td>Number of rows affected</td></tr>
+        <tr><td class="k">SQL%ISOPEN</td><td>Always FALSE for implicit cursors (closed instantly)</td></tr>
+      </table>
+      <div class="callout warn">Common trap question: <i>"Is SQL%ISOPEN ever TRUE?"</i> → No, for implicit cursors Oracle opens and closes it instantly, so it's always FALSE when you check it.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 3 ===================== -->
+    <section class="chapter" id="ch3">
+      <div class="eyebrow">CHAPTER 03</div>
+      <h2>Explicit Cursors — OPEN · FETCH · CLOSE</h2>
+      <p class="lede">When a query returns <b>multiple rows</b> and you need to process them one at a time, you declare your own cursor and drive it manually through three steps: <b>OPEN</b> it, <b>FETCH</b> one row at a time into variables, then <b>CLOSE</b> it. A loop that checks <b>%NOTFOUND</b> stops the fetching.</p>
+
+      <div class="codewrap">
+        <div class="bar"><span>explicit_cursor.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">CURSOR</span> c_emp <span class="kw">IS</span>
+      <span class="kw">SELECT</span> empno, ename, sal <span class="kw">FROM</span> emp <span class="kw">WHERE</span> deptno = 10;
+   v_empno  emp.empno%TYPE;
+   v_ename  emp.ename%TYPE;
+   v_sal    emp.sal%TYPE;
+<span class="kw">BEGIN</span>
+   <span class="kw">OPEN</span> c_emp;
+   <span class="kw">LOOP</span>
+      <span class="kw">FETCH</span> c_emp <span class="kw">INTO</span> v_empno, v_ename, v_sal;
+      <span class="kw">EXIT WHEN</span> c_emp%NOTFOUND;
+      DBMS_OUTPUT.PUT_LINE(v_ename || <span class="str">' earns '</span> || v_sal);
+   <span class="kw">END LOOP</span>;
+   <span class="kw">CLOSE</span> c_emp;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+
+      <div class="lab" data-lab="explicit">
+        <div class="labhead"><span class="t">LIVE LAB · run the cursor against your own data</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-explicit"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>Filter DEPTNO
+                <input type="number" id="explicit-dept" value="10">
+              </label>
+              <button class="run" data-run="explicit">▶ RUN CURSOR</button>
+            </div>
+            <div class="console" id="out-explicit"><span class="placeholder">Output will appear here after you hit RUN…</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout">Interview gotcha: forgetting <b>EXIT WHEN %NOTFOUND</b> before processing the row causes the last fetched row to be processed <b>twice</b> — a very common bug to spot in code-review interview rounds.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 4 ===================== -->
+    <section class="chapter" id="ch4">
+      <div class="eyebrow">CHAPTER 04</div>
+      <h2>Cursor FOR Loop — the shortcut</h2>
+      <p class="lede">90% of explicit-cursor code in the real world is replaced by a <b>cursor FOR loop</b>. Oracle implicitly OPENs, FETCHes every row, and CLOSEs the cursor for you — no variables to declare, no NOTFOUND check.</p>
+      <div class="codewrap">
+        <div class="bar"><span>cursor_for_loop.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">BEGIN</span>
+   <span class="kw">FOR</span> r_emp <span class="kw">IN</span> (<span class="kw">SELECT</span> empno, ename, sal <span class="kw">FROM</span> emp <span class="kw">WHERE</span> deptno = 20)
+   <span class="kw">LOOP</span>
+      DBMS_OUTPUT.PUT_LINE(r_emp.ename || <span class="str">' -> '</span> || r_emp.sal);
+   <span class="kw">END LOOP</span>;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="lab" data-lab="forloop">
+        <div class="labhead"><span class="t">LIVE LAB · cursor FOR loop</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-forloop"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>Filter DEPTNO
+                <input type="number" id="forloop-dept" value="20">
+              </label>
+              <button class="run" data-run="forloop">▶ RUN FOR LOOP</button>
+            </div>
+            <div class="console" id="out-forloop"><span class="placeholder">Output will appear here after you hit RUN…</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout tip">Interview line: <b>"Cursor FOR loop = OPEN + FETCH + EXIT WHEN NOTFOUND + CLOSE, all handled implicitly."</b> Use explicit cursors only when you need fine control (e.g. fetching into a collection, or conditionally exiting early).</div>
+    </section>
+
+    <!-- ===================== CHAPTER 5 ===================== -->
+    <section class="chapter" id="ch5">
+      <div class="eyebrow">CHAPTER 05</div>
+      <h2>Parameterized Cursors</h2>
+      <p class="lede">A cursor can accept parameters just like a procedure — letting you reuse one cursor definition for many filter values instead of writing a new cursor every time.</p>
+      <div class="codewrap">
+        <div class="bar"><span>param_cursor.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">CURSOR</span> c_emp(p_dept <span class="tp">NUMBER</span>, p_min_sal <span class="tp">NUMBER</span>) <span class="kw">IS</span>
+      <span class="kw">SELECT</span> ename, sal <span class="kw">FROM</span> emp
+      <span class="kw">WHERE</span> deptno = p_dept <span class="kw">AND</span> sal >= p_min_sal;
+<span class="kw">BEGIN</span>
+   <span class="kw">FOR</span> r <span class="kw">IN</span> c_emp(10, 2000) <span class="kw">LOOP</span>
+      DBMS_OUTPUT.PUT_LINE(r.ename || <span class="str">' : '</span> || r.sal);
+   <span class="kw">END LOOP</span>;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="lab" data-lab="param">
+        <div class="labhead"><span class="t">LIVE LAB · pass parameters into the cursor</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-param"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>p_dept<input type="number" id="param-dept" value="10"></label>
+              <label>p_min_sal<input type="number" id="param-sal" value="1500"></label>
+              <button class="run" data-run="param">▶ RUN c_emp(p_dept, p_min_sal)</button>
+            </div>
+            <div class="console" id="out-param"><span class="placeholder">Output will appear here after you hit RUN…</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CHAPTER 6 ===================== -->
+    <section class="chapter" id="ch6">
+      <div class="eyebrow">CHAPTER 06</div>
+      <h2>REF CURSOR — cursors you can pass around</h2>
+      <p class="lede">A normal cursor's query is fixed at compile time. A <b>REF CURSOR</b> is a <i>pointer</i> to a result set, so you can open it with different queries at runtime and pass it out of a procedure — typically back to a calling Java/.NET app or another PL/SQL block.</p>
+      <div class="codewrap">
+        <div class="bar"><span>ref_cursor.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">TYPE</span> t_ref_cursor <span class="kw">IS</span> <span class="kw">REF CURSOR</span>;   <span class="cm">-- weak ref cursor</span>
+   v_cur     t_ref_cursor;
+   v_ename   emp.ename%TYPE;
+   v_sal     emp.sal%TYPE;
+   v_choice  <span class="tp">VARCHAR2</span>(10) := <span class="str">'HIGH'</span>;
+<span class="kw">BEGIN</span>
+   <span class="kw">IF</span> v_choice = <span class="str">'HIGH'</span> <span class="kw">THEN</span>
+      <span class="kw">OPEN</span> v_cur <span class="kw">FOR</span> <span class="kw">SELECT</span> ename, sal <span class="kw">FROM</span> emp <span class="kw">WHERE</span> sal > 3000;
+   <span class="kw">ELSE</span>
+      <span class="kw">OPEN</span> v_cur <span class="kw">FOR</span> <span class="kw">SELECT</span> ename, sal <span class="kw">FROM</span> emp <span class="kw">WHERE</span> sal &lt;= 3000;
+   <span class="kw">END IF</span>;
+
+   <span class="kw">LOOP</span>
+      <span class="kw">FETCH</span> v_cur <span class="kw">INTO</span> v_ename, v_sal;
+      <span class="kw">EXIT WHEN</span> v_cur%NOTFOUND;
+      DBMS_OUTPUT.PUT_LINE(v_ename || <span class="str">' - '</span> || v_sal);
+   <span class="kw">END LOOP</span>;
+   <span class="kw">CLOSE</span> v_cur;
+<span class="kw">END</span>;
+<span class="kw">/</span>
+
+<span class="cm">-- SYS_REFCURSOR is Oracle's built-in weak REF CURSOR type, used 95% of the time:</span>
+<span class="kw">PROCEDURE</span> get_emps(p_dept <span class="tp">NUMBER</span>, p_cur <span class="kw">OUT</span> SYS_REFCURSOR) <span class="kw">IS</span>
+<span class="kw">BEGIN</span>
+   <span class="kw">OPEN</span> p_cur <span class="kw">FOR</span> <span class="kw">SELECT</span> * <span class="kw">FROM</span> emp <span class="kw">WHERE</span> deptno = p_dept;
+<span class="kw">END</span>;</pre>
+      </div>
+      <table class="cheat">
+        <tr><th>Type</th><th>What it is</th><th>When to use</th></tr>
+        <tr><td class="k">Strong REF CURSOR</td><td>Has a fixed RETURN type, e.g. <code>RETURN emp%ROWTYPE</code></td><td>You want compile-time column checking</td></tr>
+        <tr><td class="k">Weak REF CURSOR</td><td>No RETURN type — works with any query</td><td>Generic, reusable code (most common)</td></tr>
+        <tr><td class="k">SYS_REFCURSOR</td><td>Oracle's pre-defined weak ref cursor type</td><td>Default choice — no need to declare your own TYPE</td></tr>
+      </table>
+      <div class="lab" data-lab="refcursor">
+        <div class="labhead"><span class="t">LIVE LAB · one ref cursor, two different queries</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-refcursor"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>v_choice
+                <select id="ref-choice" style="background:#0a1322;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:13px;">
+                  <option value="HIGH">HIGH (sal &gt; 3000)</option>
+                  <option value="LOW">LOW (sal &lt;= 3000)</option>
+                </select>
+              </label>
+              <button class="run" data-run="refcursor">▶ OPEN v_cur FOR …</button>
+            </div>
+            <div class="console" id="out-refcursor"><span class="placeholder">Output will appear here after you hit RUN…</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout warn">Top interview question: <i>"Difference between a normal cursor and a REF CURSOR?"</i> → A normal cursor's SELECT is fixed at compile time and cannot be returned out of its block; a REF CURSOR's SELECT can be assigned dynamically at runtime and the cursor variable itself can be passed as an OUT parameter to the caller.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 7 ===================== -->
+    <section class="chapter" id="ch7">
+      <div class="eyebrow">CHAPTER 07</div>
+      <h2>BULK COLLECT — fetch many rows in one trip</h2>
+      <p class="lede">Fetching row-by-row means one context switch between the PL/SQL engine and the SQL engine <i>per row</i> — slow for large data. <b>BULK COLLECT INTO</b> fetches the whole result set (or a chunk of it, with <b>LIMIT</b>) into a collection in a single context switch.</p>
+      <div class="codewrap">
+        <div class="bar"><span>bulk_collect.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">TYPE</span> t_sal_tab <span class="kw">IS</span> <span class="kw">TABLE OF</span> emp.sal%TYPE;
+   v_sals  t_sal_tab;
+<span class="kw">BEGIN</span>
+   <span class="kw">SELECT</span> sal <span class="kw">BULK COLLECT INTO</span> v_sals <span class="kw">FROM</span> emp;   <span class="cm">-- one round trip</span>
+   DBMS_OUTPUT.PUT_LINE(<span class="str">'Fetched '</span> || v_sals.COUNT || <span class="str">' salaries'</span>);
+
+   <span class="cm">-- with a cursor + LIMIT, to avoid loading millions of rows into memory at once:</span>
+   <span class="kw">DECLARE</span>
+      <span class="kw">CURSOR</span> c_emp <span class="kw">IS</span> <span class="kw">SELECT</span> sal <span class="kw">FROM</span> emp;
+      <span class="kw">TYPE</span> t_tab <span class="kw">IS</span> <span class="kw">TABLE OF</span> emp.sal%TYPE;
+      v_chunk t_tab;
+   <span class="kw">BEGIN</span>
+      <span class="kw">OPEN</span> c_emp;
+      <span class="kw">LOOP</span>
+         <span class="kw">FETCH</span> c_emp <span class="kw">BULK COLLECT INTO</span> v_chunk <span class="kw">LIMIT</span> 100;
+         <span class="kw">EXIT WHEN</span> v_chunk.COUNT = 0;
+         <span class="cm">-- process v_chunk(1..v_chunk.COUNT) here</span>
+      <span class="kw">END LOOP</span>;
+      <span class="kw">CLOSE</span> c_emp;
+   <span class="kw">END</span>;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="lab" data-lab="bulkcollect">
+        <div class="labhead"><span class="t">LIVE LAB · fetch in chunks with LIMIT</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable — add rows to see chunking)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-bulkcollect"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>LIMIT
+                <input type="number" id="bulk-limit" value="3">
+              </label>
+              <button class="run" data-run="bulkcollect">▶ FETCH … BULK COLLECT</button>
+            </div>
+            <div class="console" id="out-bulkcollect"><span class="placeholder">Output will appear here after you hit RUN…</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout tip">Interview line: <b>"BULK COLLECT reduces context switches between the SQL and PL/SQL engines — always pair it with LIMIT in production loops to cap memory use."</b></div>
+    </section>
+
+    <!-- ===================== CHAPTER 8 ===================== -->
+    <section class="chapter" id="ch8">
+      <div class="eyebrow">CHAPTER 08</div>
+      <h2>FORALL — bulk DML, the write-side twin of BULK COLLECT</h2>
+      <p class="lede">If BULK COLLECT is bulk <b>reading</b>, <b>FORALL</b> is bulk <b>writing</b>. Instead of looping and issuing one UPDATE/INSERT/DELETE per row (N round trips), FORALL sends the whole batch of values to the SQL engine in one round trip.</p>
+      <div class="codewrap">
+        <div class="bar"><span>forall.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">TYPE</span> t_id_tab <span class="kw">IS</span> <span class="kw">TABLE OF</span> emp.empno%TYPE;
+   v_ids   t_id_tab;
+<span class="kw">BEGIN</span>
+   <span class="kw">SELECT</span> empno <span class="kw">BULK COLLECT INTO</span> v_ids <span class="kw">FROM</span> emp;
+
+   <span class="kw">FORALL</span> i <span class="kw">IN</span> v_ids.FIRST..v_ids.LAST <span class="kw">SAVE EXCEPTIONS</span>
+      <span class="kw">UPDATE</span> emp <span class="kw">SET</span> sal = sal * 2 <span class="kw">WHERE</span> empno = v_ids(i);
+
+   COMMIT;
+<span class="kw">EXCEPTION</span>
+   <span class="kw">WHEN</span> <span class="kw">OTHERS THEN</span>
+      <span class="kw">FOR</span> j <span class="kw">IN</span> 1..SQL%BULK_EXCEPTIONS.COUNT <span class="kw">LOOP</span>
+         DBMS_OUTPUT.PUT_LINE(<span class="str">'Row '</span> || SQL%BULK_EXCEPTIONS(j).ERROR_INDEX ||
+            <span class="str">' failed: '</span> || SQLERRM(-SQL%BULK_EXCEPTIONS(j).ERROR_CODE));
+      <span class="kw">END LOOP</span>;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <table class="cheat">
+        <tr><th>Without FORALL</th><th>With FORALL</th></tr>
+        <tr><td>N UPDATE statements → N context switches</td><td>1 UPDATE statement, N times internally → 1 context switch</td></tr>
+        <tr><td>Stops entirely on first error (unless handled)</td><td><code>SAVE EXCEPTIONS</code> lets all rows attempt, then reports every failure via <code>SQL%BULK_EXCEPTIONS</code></td></tr>
+      </table>
+      <div class="callout warn">Classic trap: FORALL can only contain <b>one single DML statement</b> — you cannot put two UPDATEs or an IF inside a FORALL body. If you need conditional logic, filter the collection beforehand.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 9 — capstone lab ===================== -->
+    <section class="chapter" id="ch9">
+      <div class="eyebrow">CHAPTER 09 · CAPSTONE</div>
+      <h2>The Classic Interview Task: Double Everyone's Salary</h2>
+      <p class="lede">This is the exercise that combines everything above. Watch how the <b>same business outcome</b> — doubling sal — is written three ways, from slowest to fastest, and run all three against your table to compare.</p>
+
+      <div class="codewrap">
+        <div class="bar"><span>v1_row_by_row.sql — slow</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">BEGIN</span>
+   <span class="kw">FOR</span> r <span class="kw">IN</span> (<span class="kw">SELECT</span> empno <span class="kw">FROM</span> emp) <span class="kw">LOOP</span>
+      <span class="kw">UPDATE</span> emp <span class="kw">SET</span> sal = sal * 2 <span class="kw">WHERE</span> empno = r.empno;  <span class="cm">-- 1 round trip PER row</span>
+   <span class="kw">END LOOP</span>;
+   COMMIT;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="codewrap">
+        <div class="bar"><span>v2_single_set_update.sql — best for a plain "double everyone" task</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">BEGIN</span>
+   <span class="kw">UPDATE</span> emp <span class="kw">SET</span> sal = sal * 2;   <span class="cm">-- 1 statement, 1 round trip, set-based</span>
+   COMMIT;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="codewrap">
+        <div class="bar"><span>v3_bulk_collect_forall.sql — what they actually want to hear in interviews</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   <span class="kw">TYPE</span> t_id_tab  <span class="kw">IS</span> <span class="kw">TABLE OF</span> emp.empno%TYPE;
+   <span class="kw">CURSOR</span> c_emp <span class="kw">IS</span> <span class="kw">SELECT</span> empno <span class="kw">FROM</span> emp;
+   v_ids  t_id_tab;
+<span class="kw">BEGIN</span>
+   <span class="kw">OPEN</span> c_emp;
+   <span class="kw">LOOP</span>
+      <span class="kw">FETCH</span> c_emp <span class="kw">BULK COLLECT INTO</span> v_ids <span class="kw">LIMIT</span> 500;  <span class="cm">-- read in chunks</span>
+      <span class="kw">EXIT WHEN</span> v_ids.COUNT = 0;
+
+      <span class="kw">FORALL</span> i <span class="kw">IN</span> v_ids.FIRST..v_ids.LAST <span class="kw">SAVE EXCEPTIONS</span>
+         <span class="kw">UPDATE</span> emp <span class="kw">SET</span> sal = sal * 2 <span class="kw">WHERE</span> empno = v_ids(i);  <span class="cm">-- write in one shot</span>
+   <span class="kw">END LOOP</span>;
+   <span class="kw">CLOSE</span> c_emp;
+   COMMIT;
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="callout tip">Why version 3 still matters even though version 2 is shorter: interviewers use "double the salary" as a <b>proxy question</b> to see if you know BULK COLLECT + FORALL — for a real plain doubling task, the single UPDATE (v2) is genuinely the right answer; v3's pattern is what you'd use when each row needs row-specific logic that a plain SET can't express (e.g. different multipliers per grade, calling a function per row, or writing to a log table per row).</div>
+
+      <div class="lab" data-lab="capstone">
+        <div class="labhead"><span class="t">LIVE LAB · double the salary, three ways</span><button class="ghost" data-reset>reset rows</button></div>
+        <div class="gridtwo">
+          <div class="tablewrap">
+            <div class="lbl">EMP table (editable)</div>
+            <table class="emp"><thead><tr><th>EMPNO</th><th>ENAME</th><th>SAL</th><th>DEPTNO</th></tr></thead>
+              <tbody id="tbl-capstone"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="controls">
+              <label>Multiplier
+                <input type="number" id="capstone-mult" value="2" step="0.5">
+              </label>
+              <label>BULK LIMIT
+                <input type="number" id="capstone-limit" value="500">
+              </label>
+              <button class="run" data-run="capstone" data-variant="v1">▶ Run v1 (row-by-row)</button>
+              <button class="run" data-run="capstone" data-variant="v2">▶ Run v2 (set-based)</button>
+              <button class="run" data-run="capstone" data-variant="v3">▶ Run v3 (bulk+forall)</button>
+            </div>
+            <div class="console" id="out-capstone"><span class="placeholder">Pick a version and hit run. Table updates live — try running twice!</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CHAPTER 10 ===================== -->
+    <section class="chapter" id="ch10">
+      <div class="eyebrow">CHAPTER 10</div>
+      <h2>UTL_FILE — reading and writing OS files</h2>
+      <p class="lede">UTL_FILE lets PL/SQL read from and write to text files on the database server's filesystem (inside a directory registered as an Oracle <b>DIRECTORY</b> object). Common use: exporting a report, or loading a flat file's data into a table.</p>
+      <div class="codewrap">
+        <div class="bar"><span>utl_file_write.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="cm">-- one-time DBA setup:</span>
+<span class="kw">CREATE OR REPLACE DIRECTORY</span> emp_dir <span class="kw">AS</span> <span class="str">'/u01/app/exports'</span>;
+<span class="kw">GRANT READ, WRITE ON DIRECTORY</span> emp_dir <span class="kw">TO</span> hr;
+
+<span class="kw">DECLARE</span>
+   v_file  UTL_FILE.FILE_TYPE;
+<span class="kw">BEGIN</span>
+   v_file := UTL_FILE.FOPEN(<span class="str">'EMP_DIR'</span>, <span class="str">'emp_export.csv'</span>, <span class="str">'W'</span>);
+
+   <span class="kw">FOR</span> r <span class="kw">IN</span> (<span class="kw">SELECT</span> empno, ename, sal <span class="kw">FROM</span> emp) <span class="kw">LOOP</span>
+      UTL_FILE.PUT_LINE(v_file, r.empno || <span class="str">','</span> || r.ename || <span class="str">','</span> || r.sal);
+   <span class="kw">END LOOP</span>;
+
+   UTL_FILE.FCLOSE(v_file);
+<span class="kw">EXCEPTION</span>
+   <span class="kw">WHEN</span> UTL_FILE.INVALID_PATH <span class="kw">THEN</span>
+      DBMS_OUTPUT.PUT_LINE(<span class="str">'Directory object not found or no access.'</span>);
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="codewrap">
+        <div class="bar"><span>utl_file_read.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">DECLARE</span>
+   v_file  UTL_FILE.FILE_TYPE;
+   v_line  <span class="tp">VARCHAR2</span>(4000);
+<span class="kw">BEGIN</span>
+   v_file := UTL_FILE.FOPEN(<span class="str">'EMP_DIR'</span>, <span class="str">'emp_export.csv'</span>, <span class="str">'R'</span>);
+   <span class="kw">LOOP</span>
+      <span class="kw">BEGIN</span>
+         UTL_FILE.GET_LINE(v_file, v_line);
+         DBMS_OUTPUT.PUT_LINE(v_line);
+      <span class="kw">EXCEPTION</span>
+         <span class="kw">WHEN</span> NO_DATA_FOUND <span class="kw">THEN</span> EXIT;
+      <span class="kw">END</span>;
+   <span class="kw">END LOOP</span>;
+   UTL_FILE.FCLOSE(v_file);
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <div class="lab" data-lab="utlfile">
+        <div class="labhead"><span class="t">LIVE LAB · simulate UTL_FILE.FOPEN / PUT_LINE / FCLOSE</span></div>
+        <div class="controls">
+          <button class="run" data-run="utlwrite">▶ FOPEN 'W' + write all rows + FCLOSE</button>
+        </div>
+        <div class="console" id="out-utlfile"><span class="placeholder">Output (the simulated emp_export.csv content) will appear here…</span></div>
+      </div>
+      <table class="cheat">
+        <tr><th>Mode</th><th>Meaning</th></tr>
+        <tr><td class="k">'R'</td><td>Read</td></tr>
+        <tr><td class="k">'W'</td><td>Write (overwrite if file exists)</td></tr>
+        <tr><td class="k">'A'</td><td>Append</td></tr>
+      </table>
+      <div class="callout warn">Interview gotcha: <b>UTL_FILE always reads/writes files on the database SERVER</b>, not your local laptop — a very common misconception for freshers to clear up out loud.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 11 ===================== -->
+    <section class="chapter" id="ch11">
+      <div class="eyebrow">CHAPTER 11</div>
+      <h2>Global Temporary Tables (GTT)</h2>
+      <p class="lede">A GTT has a <b>permanent structure</b> but <b>session-private or transaction-private data</b> — perfect for staging intermediate results during a complex batch job without different sessions seeing each other's rows.</p>
+      <div class="codewrap">
+        <div class="bar"><span>gtt.sql</span><div class="dots"><span></span><span></span><span></span></div></div>
+        <pre><span class="kw">CREATE GLOBAL TEMPORARY TABLE</span> gtt_emp_staging (
+   empno  <span class="tp">NUMBER</span>,
+   sal    <span class="tp">NUMBER</span>
+) <span class="kw">ON COMMIT</span> <span class="kw">DELETE ROWS</span>;   <span class="cm">-- or ON COMMIT PRESERVE ROWS</span>
+
+<span class="kw">BEGIN</span>
+   <span class="kw">INSERT INTO</span> gtt_emp_staging <span class="kw">SELECT</span> empno, sal <span class="kw">FROM</span> emp <span class="kw">WHERE</span> sal > 3000;
+   <span class="cm">-- ... do further processing on the staged rows ...</span>
+   COMMIT;  <span class="cm">-- with DELETE ROWS, gtt_emp_staging is now empty again</span>
+<span class="kw">END</span>;
+<span class="kw">/</span></pre>
+      </div>
+      <table class="cheat">
+        <tr><th>Option</th><th>Behaviour</th></tr>
+        <tr><td class="k">ON COMMIT DELETE ROWS</td><td>Default. Rows are wiped automatically at every COMMIT (transaction-private).</td></tr>
+        <tr><td class="k">ON COMMIT PRESERVE ROWS</td><td>Rows survive COMMIT, but are wiped when the session ends (session-private).</td></tr>
+      </table>
+      <div class="lab" data-lab="gtt">
+        <div class="labhead"><span class="t">LIVE LAB · stage rows, then COMMIT and watch ON COMMIT DELETE ROWS clear them</span></div>
+        <div class="controls">
+          <label>Min SAL to stage
+            <input type="number" id="gtt-minsal" value="2500">
+          </label>
+          <button class="run" data-run="gttstage">▶ INSERT INTO gtt_emp_staging</button>
+          <button class="run" data-run="gttcommit">▶ COMMIT</button>
+        </div>
+        <div class="console" id="out-gtt"><span class="placeholder">Stage rows, inspect the table, then COMMIT to see it auto-clear.</span></div>
+      </div>
+      <div class="callout">Interview comparison they love to ask: <b>GTT vs. a normal table used as staging</b> → GTT needs no manual cleanup (no DELETE/TRUNCATE step), generates much less redo/undo, and different sessions never see each other's data even though they share one table definition.</div>
+    </section>
+
+    <!-- ===================== CHAPTER 12 — interview deck ===================== -->
+    <section class="chapter" id="ch12">
+      <div class="eyebrow">CHAPTER 12</div>
+      <h2>Interview Drill Deck</h2>
+      <p class="lede">Tap a card to flip it open. These are asked, near-verbatim, in fresher-level PL/SQL interviews.</p>
+      <div class="qa-grid" id="qaGrid"></div>
+    </section>
+
+    <!-- ===================== CHAPTER 13 — cheat sheet ===================== -->
+    <section class="chapter" id="ch13">
+      <div class="eyebrow">CHAPTER 13</div>
+      <h2>One-Page Cheat Sheet</h2>
+      <p class="lede">Skim this five minutes before you walk in.</p>
+      <table class="cheat">
+        <tr><th>Concept</th><th>One-line definition</th><th>Syntax anchor</th></tr>
+        <tr><td class="k">Implicit cursor</td><td>Auto-created for single INSERT/UPDATE/DELETE/SELECT INTO</td><td>SQL%FOUND / SQL%ROWCOUNT</td></tr>
+        <tr><td class="k">Explicit cursor</td><td>Manually controlled cursor for multi-row queries</td><td>OPEN / FETCH / CLOSE</td></tr>
+        <tr><td class="k">Cursor FOR loop</td><td>Implicit OPEN/FETCH/CLOSE wrapped in a FOR loop</td><td>FOR r IN (SELECT…) LOOP</td></tr>
+        <tr><td class="k">Parameterized cursor</td><td>Cursor accepting arguments for reuse</td><td>CURSOR c(p NUMBER) IS …</td></tr>
+        <tr><td class="k">REF CURSOR</td><td>Pointer to a result set; can be passed to/from procedures</td><td>SYS_REFCURSOR</td></tr>
+        <tr><td class="k">BULK COLLECT</td><td>Fetch many rows into a collection in one round trip</td><td>SELECT … BULK COLLECT INTO … (LIMIT n)</td></tr>
+        <tr><td class="k">FORALL</td><td>Bulk DML — send a batch of UPDATE/INSERT/DELETE in one round trip</td><td>FORALL i IN a.FIRST..a.LAST SAVE EXCEPTIONS</td></tr>
+        <tr><td class="k">UTL_FILE</td><td>Read/write text files on the DB server</td><td>FOPEN / PUT_LINE / GET_LINE / FCLOSE</td></tr>
+        <tr><td class="k">Global Temp Table</td><td>Permanent structure, session/transaction-private data</td><td>ON COMMIT DELETE/PRESERVE ROWS</td></tr>
+      </table>
+
+      <div class="callout tip">Last-minute confidence boost: in an interview, when asked <i>"how would you update salaries for thousands of employees efficiently?"</i> the expected shape of your answer is: <b>"I'd avoid row-by-row, use a cursor with BULK COLLECT...LIMIT to fetch in manageable chunks, then FORALL with SAVE EXCEPTIONS to apply the updates in bulk and log any failed rows."</b> That single sentence demonstrates cursors, bulk collect, forall and exception handling at once.</div>
+    </section>
+
+    <footer>Built as a self-contained learning lab — open this HTML file in any browser, edit the tables, and re-run each lab as many times as you like. No database connection required; the simulator mirrors real PL/SQL semantics (FETCH order, LIMIT chunking, exception behaviour, GTT clearing on COMMIT).</footer>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   Sample EMP dataset (mirrors the classic scott.emp table)
+   ========================================================= */
+const SEED_EMP = [
+  {empno:7369, ename:'SMITH', sal:800,  deptno:20},
+  {empno:7499, ename:'ALLEN', sal:1600, deptno:30},
+  {empno:7521, ename:'WARD',  sal:1250, deptno:30},
+  {empno:7566, ename:'JONES', sal:2975, deptno:20},
+  {empno:7654, ename:'MARTIN',sal:1250, deptno:30},
+  {empno:7698, ename:'BLAKE', sal:2850, deptno:30},
+  {empno:7782, ename:'CLARK', sal:2450, deptno:10},
+  {empno:7839, ename:'KING',  sal:5000, deptno:10},
+  {empno:7844, ename:'TURNER',sal:1500, deptno:30},
+  {empno:7900, ename:'JAMES', sal:950,  deptno:30}
+];
+
+const labIds = ['explicit','forloop','param','refcursor','bulkcollect','capstone'];
+const state = {};
+labIds.forEach(id => state[id] = SEED_EMP.map(r => ({...r})));
+let gttRows = [];
+
+function renderTable(labId){
+  const tbody = document.getElementById('tbl-'+labId);
+  if(!tbody) return;
+  const rows = state[labId];
+  tbody.innerHTML = rows.map((r,i)=>`
+    <tr>
+      <td>${r.empno}</td>
+      <td><input data-lab="${labId}" data-i="${i}" data-f="ename" value="${r.ename}" style="width:62px"></td>
+      <td><input data-lab="${labId}" data-i="${i}" data-f="sal" type="number" value="${r.sal}"></td>
+      <td><input data-lab="${labId}" data-i="${i}" data-f="deptno" type="number" value="${r.deptno}" style="width:46px"></td>
+    </tr>`).join('');
+}
+labIds.forEach(renderTable);
+
+document.querySelectorAll('table.emp').forEach(tbl=>{
+  tbl.addEventListener('input', e=>{
+    const t = e.target;
+    if(!t.dataset.lab) return;
+    const lab = t.dataset.lab, i = +t.dataset.i, f = t.dataset.f;
+    let v = t.value;
+    if(f==='sal' || f==='deptno') v = Number(v);
+    state[lab][i][f] = v;
+    t.classList.add('dirty');
+  });
+});
+
+document.querySelectorAll('[data-reset]').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    const labEl = e.target.closest('.lab');
+    const labId = labEl.dataset.lab;
+    state[labId] = SEED_EMP.map(r=>({...r}));
+    renderTable(labId);
+    const out = document.getElementById('out-'+labId);
+    if(out) out.innerHTML = '<span class="placeholder">Rows reset to seed data.</span>';
+  });
+});
+
+function out(labId){ return document.getElementById('out-'+labId); }
+function logLine(labId, text, cls){
+  const el = out(labId);
+  if(el.querySelector('.placeholder')) el.innerHTML='';
+  const span = document.createElement('div');
+  span.className = cls||'ln-out';
+  span.textContent = text;
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+function clearOut(labId){ out(labId).innerHTML=''; }
+function head(labId, sql){
+  clearOut(labId);
+  logLine(labId, 'SQL> '+sql, 'ln-head');
+}
+
+/* ---------- Chapter 3: explicit cursor ---------- */
+document.querySelector('[data-run="explicit"]').addEventListener('click', ()=>{
+  const dept = Number(document.getElementById('explicit-dept').value);
+  head('explicit', `OPEN c_emp;  -- WHERE deptno = ${dept}`);
+  const rows = state.explicit.filter(r=>r.deptno===dept);
+  if(rows.length===0){ logLine('explicit','(0 rows matched — loop body never executes)','ln-meta'); }
+  rows.forEach(r=> logLine('explicit', `${r.ename} earns ${r.sal}`));
+  logLine('explicit', `c_emp%NOTFOUND -> TRUE, exiting loop. CLOSE c_emp;`, 'ln-meta');
+});
+
+/* ---------- Chapter 4: cursor for loop ---------- */
+document.querySelector('[data-run="forloop"]').addEventListener('click', ()=>{
+  const dept = Number(document.getElementById('forloop-dept').value);
+  head('forloop', `FOR r_emp IN (SELECT * FROM emp WHERE deptno = ${dept}) LOOP`);
+  const rows = state.forloop.filter(r=>r.deptno===dept);
+  if(rows.length===0) logLine('forloop','(0 rows — loop body skipped entirely, no manual cursor handling needed)','ln-meta');
+  rows.forEach(r=> logLine('forloop', `${r.ename} -> ${r.sal}`));
+  logLine('forloop','END LOOP;  -- cursor auto-closed','ln-meta');
+});
+
+/* ---------- Chapter 5: parameterized cursor ---------- */
+document.querySelector('[data-run="param"]').addEventListener('click', ()=>{
+  const dept = Number(document.getElementById('param-dept').value);
+  const minSal = Number(document.getElementById('param-sal').value);
+  head('param', `c_emp(${dept}, ${minSal})`);
+  const rows = state.param.filter(r=>r.deptno===dept && r.sal>=minSal);
+  if(rows.length===0) logLine('param','(0 rows matched both conditions)','ln-meta');
+  rows.forEach(r=> logLine('param', `${r.ename} : ${r.sal}`));
+});
+
+/* ---------- Chapter 6: ref cursor ---------- */
+document.querySelector('[data-run="refcursor"]').addEventListener('click', ()=>{
+  const choice = document.getElementById('ref-choice').value;
+  const isHigh = choice==='HIGH';
+  head('refcursor', isHigh ? `OPEN v_cur FOR SELECT … WHERE sal > 3000;` : `OPEN v_cur FOR SELECT … WHERE sal <= 3000;`);
+  const rows = state.refcursor.filter(r=> isHigh ? r.sal>3000 : r.sal<=3000);
+  if(rows.length===0) logLine('refcursor','(0 rows in this branch)','ln-meta');
+  rows.forEach(r=> logLine('refcursor', `${r.ename} - ${r.sal}`));
+  logLine('refcursor', 'CLOSE v_cur;', 'ln-meta');
+});
+
+/* ---------- Chapter 7: bulk collect with limit ---------- */
+document.querySelector('[data-run="bulkcollect"]').addEventListener('click', ()=>{
+  const limit = Math.max(1, Number(document.getElementById('bulk-limit').value)||1);
+  head('bulkcollect', `FETCH c_emp BULK COLLECT INTO v_chunk LIMIT ${limit};`);
+  const sals = state.bulkcollect.map(r=>r.sal);
+  let fetched = 0, trip = 0;
+  while(fetched < sals.length){
+    trip++;
+    const chunk = sals.slice(fetched, fetched+limit);
+    fetched += chunk.length;
+    logLine('bulkcollect', `Round trip #${trip}: fetched [${chunk.join(', ')}]  (v_chunk.COUNT = ${chunk.length})`);
+  }
+  logLine('bulkcollect', `Round trip #${trip+1}: v_chunk.COUNT = 0 -> EXIT WHEN fires. Total round trips: ${trip+1} (vs ${sals.length} for row-by-row).`, 'ln-meta');
+});
+
+/* ---------- Chapter 9: capstone — three update strategies ---------- */
+document.querySelectorAll('[data-run="capstone"]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const variant = btn.dataset.variant;
+    const mult = Number(document.getElementById('capstone-mult').value)||1;
+    const limit = Math.max(1, Number(document.getElementById('capstone-limit').value)||1);
+    const rows = state.capstone;
+
+    if(variant==='v1'){
+      head('capstone', `-- v1 row-by-row: 1 UPDATE per employee`);
+      rows.forEach((r,i)=>{
+        const before = r.sal;
+        r.sal = +(r.sal*mult).toFixed(2);
+        logLine('capstone', `Round trip ${i+1}: UPDATE emp SET sal=${r.sal} WHERE empno=${r.empno};  (${before} -> ${r.sal})`);
+      });
+      logLine('capstone', `Total round trips: ${rows.length}. COMMIT;`, 'ln-warn');
+    }
+
+    if(variant==='v2'){
+      head('capstone', `-- v2 set-based: UPDATE emp SET sal = sal * ${mult};`);
+      rows.forEach(r=>{ r.sal = +(r.sal*mult).toFixed(2); });
+      logLine('capstone', `${rows.length} rows updated in 1 round trip. COMMIT;`, 'ln-meta');
+    }
+
+    if(variant==='v3'){
+      head('capstone', `-- v3 BULK COLLECT (LIMIT ${limit}) + FORALL`);
+      const ids = rows.map(r=>r.empno);
+      let fetched=0, trip=0, totalWrites=0;
+      while(fetched<ids.length){
+        trip++;
+        const chunkIds = ids.slice(fetched, fetched+limit);
+        fetched += chunkIds.length;
+        logLine('capstone', `FETCH c_emp BULK COLLECT INTO v_ids LIMIT ${limit};  -- got ${chunkIds.length} ids`);
+        chunkIds.forEach(id=>{
+          const r = rows.find(x=>x.empno===id);
+          r.sal = +(r.sal*mult).toFixed(2);
+        });
+        logLine('capstone', `FORALL i IN v_ids.FIRST..v_ids.LAST UPDATE emp SET sal=sal*${mult} WHERE empno=v_ids(i);  -- 1 round trip for ${chunkIds.length} rows`, 'ln-meta');
+        totalWrites++;
+      }
+      logLine('capstone', `Total round trips: ${trip} reads + ${totalWrites} writes = ${trip+totalWrites} (vs ${rows.length} for row-by-row). COMMIT;`, 'ln-meta');
+    }
+    renderTable('capstone');
+    document.querySelectorAll('#tbl-capstone input').forEach(i=>i.classList.remove('dirty'));
+  });
+});
+
+/* ---------- Chapter 10: UTL_FILE simulation ---------- */
+document.querySelector('[data-run="utlwrite"]').addEventListener('click', ()=>{
+  head('utlfile', `v_file := UTL_FILE.FOPEN('EMP_DIR','emp_export.csv','W');`);
+  logLine('utlfile', `[file handle opened: emp_export.csv]`, 'ln-meta');
+  SEED_EMP.forEach(r=> logLine('utlfile', `${r.empno},${r.ename},${r.sal}`));
+  logLine('utlfile', `UTL_FILE.FCLOSE(v_file);  -- ${SEED_EMP.length} lines written to server filesystem`, 'ln-meta');
+});
+
+/* ---------- Chapter 11: Global Temporary Table ---------- */
+document.querySelector('[data-run="gttstage"]').addEventListener('click', ()=>{
+  const minSal = Number(document.getElementById('gtt-minsal').value);
+  head('gtt', `INSERT INTO gtt_emp_staging SELECT empno, sal FROM emp WHERE sal > ${minSal};`);
+  gttRows = SEED_EMP.filter(r=>r.sal>minSal).map(r=>({empno:r.empno, sal:r.sal}));
+  logLine('gtt', `${gttRows.length} rows inserted. gtt_emp_staging now contains:`, 'ln-meta');
+  if(gttRows.length===0) logLine('gtt','(empty)','ln-meta');
+  gttRows.forEach(r=> logLine('gtt', `  empno=${r.empno}, sal=${r.sal}`));
+});
+document.querySelector('[data-run="gttcommit"]').addEventListener('click', ()=>{
+  logLine('gtt', `SQL> COMMIT;`, 'ln-head');
+  if(gttRows.length===0){
+    logLine('gtt', `(gtt_emp_staging was already empty)`, 'ln-meta');
+  } else {
+    logLine('gtt', `ON COMMIT DELETE ROWS fires -> ${gttRows.length} rows purged automatically.`, 'ln-warn');
+    gttRows = [];
+    logLine('gtt', `gtt_emp_staging now contains 0 rows. (Table definition still exists for next transaction.)`, 'ln-meta');
+  }
+});
+
+/* =========================================================
+   Interview Q&A deck
+   ========================================================= */
+const QA = [
+  ["What's the difference between an implicit and explicit cursor?","Implicit cursors are auto-created by Oracle for single-row SELECT INTO / INSERT / UPDATE / DELETE statements. Explicit cursors are declared by you for queries that can return multiple rows, and you control them with OPEN, FETCH, CLOSE."],
+  ["What does %NOTFOUND do and why is it placed right after FETCH?","It returns TRUE once a FETCH finds no more rows. It's placed right after FETCH (before processing the fetched values) so the loop exits before processing a stale/duplicate last row."],
+  ["What is a REF CURSOR and why use it over a normal cursor?","A REF CURSOR is a pointer to a result set whose query can be assigned at runtime, and it can be passed as a parameter — typically OUT — to return a result set from a procedure to a caller (e.g. Java, .NET, or another PL/SQL block). A normal cursor's query is fixed and cannot leave its declaring block."],
+  ["Difference between a strong and weak REF CURSOR?","A strong REF CURSOR has a fixed RETURN type so the compiler checks column compatibility; a weak REF CURSOR (like SYS_REFCURSOR) has no RETURN type and works with any query, trading compile-time safety for flexibility."],
+  ["Why use BULK COLLECT instead of a normal FETCH loop?","Normal row-by-row fetching causes one context switch between the PL/SQL and SQL engines per row. BULK COLLECT fetches many rows (optionally chunked with LIMIT) in a single context switch, dramatically reducing overhead for large datasets."],
+  ["Why pair BULK COLLECT with LIMIT?","Without LIMIT, BULK COLLECT tries to load the entire result set into memory at once, which can exhaust PGA memory on large tables. LIMIT processes the data in safe, fixed-size chunks."],
+  ["What does FORALL do differently from a normal FOR loop with DML inside it?","A FOR loop issues one DML statement per iteration — N round trips to the SQL engine. FORALL sends the whole batch of bind values to the SQL engine in one call, executing the DML N times internally but in a single round trip."],
+  ["What is SAVE EXCEPTIONS used for in FORALL?","By default a FORALL stops entirely on the first row that errors. SAVE EXCEPTIONS lets all rows attempt the DML, collects every failure into SQL%BULK_EXCEPTIONS, and lets you report or handle them after the loop instead of losing the whole batch."],
+  ["Can a FORALL statement contain more than one DML statement?","No — a FORALL body must contain exactly one DML statement (INSERT, UPDATE, or DELETE). Multiple statements or conditional logic must be handled outside FORALL, e.g. by pre-filtering the collection."],
+  ["What's the fastest way to double every employee's salary in SQL?","A single set-based UPDATE emp SET sal = sal * 2; — it's one statement and one round trip, faster than any cursor-based approach. Cursor + BULK COLLECT + FORALL is the right tool when each row needs row-specific logic that a plain SET expression can't express."],
+  ["Where does UTL_FILE read and write files — your laptop or the database server?","Always the database server's filesystem, in a path registered via a CREATE DIRECTORY object that the schema has been granted READ/WRITE on. It has no access to a client machine's filesystem."],
+  ["What's the difference between ON COMMIT DELETE ROWS and ON COMMIT PRESERVE ROWS on a Global Temporary Table?","DELETE ROWS (the default) clears the table's data automatically at every COMMIT — data is transaction-private. PRESERVE ROWS keeps the data until the session ends — data is session-private."],
+  ["Why use a Global Temporary Table instead of a normal staging table?","A GTT needs no manual cleanup (rows clear automatically), generates far less redo/undo since its data isn't permanently logged the same way, and concurrent sessions never see each other's rows even though they share one table definition."],
+  ["What's the difference between %ROWTYPE and a manually declared record?","%ROWTYPE (e.g. emp%ROWTYPE or c_emp%ROWTYPE) auto-generates a record matching a table's or cursor's columns, and stays in sync if the table changes — no manual maintenance needed, unlike a hand-declared record type."],
+  ["What exception is raised when a SELECT INTO returns no rows? And more than one row?","NO_DATA_FOUND when zero rows match; TOO_MANY_ROWS when more than one row is returned into a SELECT INTO that expects a single row."]
+];
+const qaGrid = document.getElementById('qaGrid');
+QA.forEach(([q,a])=>{
+  const card = document.createElement('div');
+  card.className='qa';
+  card.innerHTML = `<span class="chev">+</span><div class="q">${q}</div><div class="a">${a}</div>`;
+  card.addEventListener('click', ()=> card.classList.toggle('open'));
+  qaGrid.appendChild(card);
+});
+
+/* ---------- sidebar active-link tracking ---------- */
+const navlinks = Array.from(document.querySelectorAll('.navlist a'));
+const sections = navlinks.map(a=> document.querySelector(a.getAttribute('href')));
+const progressEl = document.getElementById('progress');
+function onScroll(){
+  let idx = 0;
+  sections.forEach((sec,i)=>{ if(sec && sec.getBoundingClientRect().top < 140) idx = i; });
+  navlinks.forEach(a=>a.classList.remove('active'));
+  navlinks[idx].classList.add('active');
+  progressEl.textContent = `SQL> ${navlinks[idx].textContent.trim()}`;
+}
+document.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* ---------- help modal ---------- */
+const helpFab = document.getElementById('helpFab');
+const helpOverlay = document.getElementById('helpOverlay');
+const helpClose = document.getElementById('helpClose');
+function openHelp(){ helpOverlay.classList.add('show'); }
+function closeHelp(){ helpOverlay.classList.remove('show'); }
+helpFab.addEventListener('click', openHelp);
+helpClose.addEventListener('click', closeHelp);
+helpOverlay.addEventListener('click', e=>{ if(e.target===helpOverlay) closeHelp(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeHelp(); });
+if(!localStorage.getItem('plsqlHelpSeen')){
+  setTimeout(()=>{ openHelp(); try{localStorage.setItem('plsqlHelpSeen','1');}catch(e){} }, 600);
+}
+</script>
+</body>
+</html>
