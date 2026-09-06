@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LinkedIn AI Agent</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#0f1420;color:#e8ecf3;padding:20px}
+.c{max-width:760px;margin:0 auto}
+h1{font-size:1.4rem;color:#fff}
+.sub{color:#7d8aa3;font-size:.9rem;margin-bottom:16px}
+.card{background:#1a2233;border:1px solid #2a3550;border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.75rem;color:#9db0d0;margin-bottom:6px;font-weight:600}
+input,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #2a3550;background:#0f1420;color:#e8ecf3;font-size:1rem;outline:none}
+textarea{min-height:90px}
+.kr{display:flex;gap:8px}.kr input{flex:1}
+.ks{font-size:.8rem;margin-top:6px}.ok{color:#4ade80}.warn{color:#fbbf24}
+.skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;margin-bottom:14px}
+.skill{background:#1a2233;border:1px solid #2a3550;border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;font-size:.78rem}
+.skill.active{background:#1e3a8a;border-color:#4a7dff;color:#fff}
+.skill span{font-size:1.2rem;display:block}
+.gen{width:100%;padding:14px;border:none;border-radius:10px;margin-top:12px;background:#2563eb;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+.gen:disabled{opacity:.5}
+#output{white-space:pre-wrap;line-height:1.6;font-size:.95rem}
+.oh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cb{background:#2a3550;color:#e8ecf3;border:none;padding:8px 14px;border-radius:8px;cursor:pointer}
+#loader{display:none;text-align:center;padding:16px;color:#7d8aa3}
+#errBox{color:#f87171;font-size:.9rem;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>🤖 LinkedIn AI Agent</h1>
+<div class="sub">Praveen Karn · Oracle OFSLL Lead · Gemini</div>
+
+<div class="card">
+<label>🔑 GEMINI API KEY (auto-saved on this device)</label>
+<div class="kr">
+<input type="password" id="apiKey" placeholder="Paste AIza... key">
+<button class="cb" type="button" onclick="tk()">👁️</button>
+</div>
+<div class="ks" id="ks"></div>
+</div>
+
+<div class="skills" id="skills"></div>
+
+<div class="card">
+<label id="tl">💡 TOPIC</label>
+<textarea id="topic" placeholder="e.g. OFSLL loan servicing automation"></textarea>
+<button class="gen" id="genBtn" onclick="gen()">Generate →</button>
+<div id="errBox"></div>
+</div>
+
+<div id="loader">⏳ Generating…</div>
+<div class="card" id="oc" style="display:none">
+<div class="oh"><label style="margin:0">📄 RESULT</label>
+<button class="cb" onclick="cp()">📋 Copy</button></div>
+<div id="output"></div>
+</div>
+</div>
+
+<script>
+var NAME="Praveen Karn",ROLE="Oracle OFSLL Lead, FinTech",TONE="Confident, Technical, Insightful";
+var S=[
+["✍️","Post Writer","Topic for your post","Write a high-performing LinkedIn post about: {t}. Strong hook, short paragraphs, one concrete domain insight, takeaway, end with a question. 3-5 hashtags. 150-250 words."],
+["🧬","Humanizer","Paste AI text to humanize","Rewrite to sound human. Remove AI cliches (delve, leverage, game-changer). Vary sentence length. Keep meaning:\n\n{t}"],
+["💬","Comment","Paste post to comment on","Write 3 insightful LinkedIn comments (1-3 sentences each) on this post. Add value, no generic praise:\n\n{t}"],
+["↩️","Reply","Paste comment received","Write a warm short reply (1-2 sentences) to this comment on my post:\n\n{t}"],
+["🎣","Hook","Topic for hooks","Write 7 scroll-stopping LinkedIn hooks about: {t}. Mix: bold claim, contrarian, stat, story, question, curiosity, confession. Number them."],
+["📅","7-Day Plan","Theme for the week","Create a 7-day LinkedIn content plan on: {t}. Per day: format, title, 1-line hook."],
+["👤","Profile","Keywords/focus","Write 3 LinkedIn headline options (under 220 chars) and a compelling first-person About section. Focus: {t}"],
+["🔍","Audit","Paste post to audit","Audit this LinkedIn post: 1) Score/10 2) What works 3) Weaknesses 4) Rewritten version:\n\n{t}"],
+["📢","Advocacy","Company/product to promote","Write an authentic employee-advocacy post promoting: {t}. Personal not corporate, subtle CTA, 3 hashtags. 120-200 words."]
+];
+var A=S[0];
+var g=document.getElementById("skills");
+S.forEach(function(s,i){
+var d=document.createElement("div");
+d.className="skill"+(i===0?" active":"");
+d.innerHTML="<span>"+s[0]+"</span>"+s[1];
+d.onclick=function(){
+document.querySelectorAll(".skill").forEach(function(x){x.classList.remove("active")});
+d.classList.add("active");A=s;
+document.getElementById("tl").textContent="💡 "+s[2];
+document.getElementById("topic").placeholder=s[2];
+};
+g.appendChild(d);
+});
+var ki=document.getElementById("apiKey"),ks=document.getElementById("ks");
+var sv=localStorage.getItem("gk")||"";
+if(sv){ki.value=sv;ks.innerHTML='<span class="ok">✅ Key saved</span>';}
+else{ks.innerHTML='<span class="warn">⚠️ Get free key: aistudio.google.com</span>';}
+ki.addEventListener("input",function(){
+var v=ki.value.trim();
+if(v.length>10){localStorage.setItem("gk",v);ks.innerHTML='<span class="ok">✅ Key saved</span>';}
+});
+function tk(){ki.type=ki.type==="password"?"text":"password";}
+function err(m){var e=document.getElementById("errBox");e.textContent=m;e.style.display="block";}
+function cp(){
+navigator.clipboard.writeText(document.getElementById("output").textContent);
+alert("Copied!");
+}
+async function gen(){
+var k=ki.value.trim(),t=document.getElementById("topic").value.trim();
+document.getElementById("errBox").style.display="none";
+if(!k){err("⚠️ Paste your Gemini API key first.");return;}
+if(!t){err("⚠️ Enter a topic first.");return;}
+var p="You are a LinkedIn content expert. Author: "+NAME+", "+ROLE+". Tone: "+TONE+".\n\nTask: "+A[3].replace("{t}",t)+"\n\nReturn only the final content.";
+var b=document.getElementById("genBtn");
+b.disabled=true;
+document.getElementById("loader").style.display="block";
+document.getElementById("oc").style.display="none";
+try{
+var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+k,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({contents:[{parts:[{text:p}]}]})
+});
+var j=await r.json();
+if(!r.ok){throw new Error(j.error&&j.error.message?j.error.message:"API error "+r.status);}
+var out=j.candidates[0].content.parts[0].text;
+document.getElementById("output").textContent=out;
+document.getElementById("oc").style.display="block";
+}catch(e){
+err("❌ "+e.message);
+}
+b.disabled=false;
+document.getElementById("loader").style.display="none";
+}
+</script>
+</body>
+</html>
