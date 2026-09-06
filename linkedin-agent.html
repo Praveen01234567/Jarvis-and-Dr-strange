@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LinkedIn AI Agent — Praveen</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+:root{
+  --li:  #0A66C2;
+  --li2: #004182;
+  --bg:  #F3F2EF;
+  --card:#FFFFFF;
+  --text:#191919;
+  --muted:#666;
+  --border:#E0DFDC;
+  --green:#057642;
+  --accent:#0A66C2;
+  --sidebar:280px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);font-size:15px;line-height:1.55}
+
+/* ── LAYOUT ── */
+#shell{display:flex;height:100dvh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sb-brand{
+  padding:20px 18px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-brand svg{flex-shrink:0}
+.sb-brand-text{font-size:15px;font-weight:700;letter-spacing:-0.3px;line-height:1.2}
+.sb-brand-text span{color:var(--li);display:block;font-size:11px;font-weight:500;letter-spacing:0;color:var(--muted)}
+
+.sb-section{padding:12px 10px 4px;font-size:10px;font-weight:600;letter-spacing:1px;color:#aaa;text-transform:uppercase}
+.sb-skills{flex:1;overflow-y:auto;padding:4px 8px 12px}
+.skill-btn{
+  width:100%;text-align:left;padding:9px 10px;border-radius:8px;border:none;
+  background:transparent;cursor:pointer;display:flex;align-items:flex-start;gap:8px;
+  font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);
+  transition:background 0.12s;margin-bottom:2px;
+}
+.skill-btn:hover{background:#F0F0F0}
+.skill-btn.active{background:#EAF0FB;color:var(--li)}
+.skill-btn .sk-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.skill-btn .sk-info{}
+.skill-btn .sk-name{font-weight:600;font-size:13px;display:block}
+.skill-btn .sk-desc{font-size:11px;color:var(--muted);display:block;margin-top:1px}
+.skill-btn.active .sk-desc{color:#5a86c9}
+
+.sb-footer{padding:12px 12px 16px;border-top:1px solid var(--border)}
+.api-wrap{display:flex;flex-direction:column;gap:5px}
+.api-wrap label{font-size:11px;font-weight:600;color:var(--muted)}
+.api-input{
+  width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--text);background:#fafafa;
+  outline:none;
+}
+.api-input:focus{border-color:var(--li);background:#fff}
+.api-status{font-size:10px;color:var(--green);font-weight:500;display:none}
+.api-status.show{display:block}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* top bar */
+#topbar{
+  padding:14px 24px;border-bottom:1px solid var(--border);background:var(--card);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.tb-title{font-size:17px;font-weight:700;letter-spacing:-0.3px}
+.tb-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.tb-badge{
+  padding:5px 12px;border-radius:100px;background:#EAF0FB;
+  color:var(--li);font-size:12px;font-weight:600;
+}
+
+/* context strip */
+#context-bar{
+  padding:10px 24px;border-bottom:1px solid var(--border);background:#FAFAFA;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0;
+}
+.ctx-field{display:flex;flex-direction:column;gap:2px;min-width:160px}
+.ctx-field label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.3px}
+.ctx-input{
+  padding:5px 8px;border:1px solid var(--border);border-radius:6px;
+  font-family:'DM Sans',sans-serif;font-size:12px;outline:none;background:#fff;
+}
+.ctx-input:focus{border-color:var(--li)}
+
+/* output area */
+#output-area{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+
+/* prompt zone */
+#prompt-zone{
+  padding:14px 20px;border-top:1px solid var(--border);background:var(--card);flex-shrink:0;
+}
+.pz-inner{
+  display:flex;gap:10px;align-items:flex-end;
+  background:#F7F7F5;border:1px solid var(--border);border-radius:12px;
+  padding:10px 12px;transition:border-color 0.15s;
+}
+.pz-inner:focus-within{border-color:var(--li);background:#fff}
+#prompt-input{
+  flex:1;border:none;background:transparent;resize:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+  line-height:1.5;max-height:120px;min-height:40px;
+}
+#send-btn{
+  padding:8px 18px;background:var(--li);border:none;border-radius:8px;
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:background 0.15s;white-space:nowrap;flex-shrink:0;
+}
+#send-btn:hover{background:var(--li2)}
+#send-btn:disabled{background:#aaa;cursor:not-allowed}
+.pz-hint{font-size:11px;color:var(--muted);margin-top:6px;padding-left:2px}
+
+/* ── MESSAGE CARDS ── */
+.msg-user{
+  align-self:flex-end;max-width:70%;
+  background:var(--li);color:#fff;border-radius:14px 14px 4px 14px;
+  padding:11px 15px;font-size:14px;
+}
+.msg-agent{
+  align-self:flex-start;max-width:88%;width:100%;
+}
+.agent-card{
+  background:var(--card);border:1px solid var(--border);border-radius:4px 14px 14px 14px;
+  overflow:hidden;
+}
+.agent-header{
+  padding:10px 16px;background:#F7F7F5;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.agent-icon{font-size:16px}
+.agent-skill-name{font-size:12px;font-weight:600;color:var(--muted)}
+.agent-body{padding:16px;font-size:14px;line-height:1.65;white-space:pre-wrap}
+.agent-body h3{font-size:14px;font-weight:700;margin:12px 0 5px;color:var(--text)}
+.agent-body h3:first-child{margin-top:0}
+.agent-body strong{font-weight:600}
+.agent-body em{font-style:italic;color:var(--muted)}
+.agent-body hr{border:none;border-top:1px solid var(--border);margin:12px 0}
+
+.agent-actions{
+  padding:10px 16px;border-top:1px solid var(--border);background:#FAFAFA;
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.act-btn{
+  padding:6px 14px;border-radius:100px;border:1px solid var(--border);
+  background:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.15s;color:var(--text);
+}
+.act-btn:hover{border-color:var(--li);color:var(--li)}
+.act-btn.primary{background:var(--li);border-color:var(--li);color:#fff}
+.act-btn.primary:hover{background:var(--li2)}
+.act-btn.danger{border-color:#e74c3c;color:#e74c3c}
+.act-btn.danger:hover{background:#fdf0ef}
+.copy-done{color:var(--green)!important;border-color:var(--green)!important}
+
+.msg-thinking{
+  align-self:flex-start;display:flex;align-items:center;gap:8px;
+  color:var(--muted);font-size:13px;padding:8px 0;
+}
+.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#aaa;
+  animation:dot-bounce 1.2s infinite;margin:0 1px}
+.dots span:nth-child(2){animation-delay:0.2s}
+.dots span:nth-child(3){animation-delay:0.4s}
+@keyframes dot-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+
+/* welcome */
+.welcome-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:28px;text-align:center;
+}
+.welcome-card h2{font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.welcome-card p{font-size:14px;color:var(--muted);max-width:480px;margin:0 auto 20px}
+.skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.sg-item{
+  padding:12px 10px;border:1px solid var(--border);border-radius:9px;
+  background:#FAFAFA;cursor:pointer;transition:all 0.15s;text-align:left;
+}
+.sg-item:hover{border-color:var(--li);background:#EAF0FB}
+.sg-item .icon{font-size:20px;margin-bottom:5px}
+.sg-item .name{font-size:12px;font-weight:600}
+.sg-item .desc{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* toast */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:999;
+  background:#191919;color:#fff;padding:10px 18px;border-radius:8px;
+  font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);
+  transition:all 0.2s;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:680px){
+  #sidebar{display:none}
+  .skill-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="shell">
+
+<!-- ── SIDEBAR ── -->
+<div id="sidebar">
+  <div class="sb-brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#0A66C2"/>
+      <path d="M8 10.5h3.5V20H8V10.5zM9.75 9A1.75 1.75 0 1 0 9.75 5.5 1.75 1.75 0 0 0 9.75 9zM14 10.5h3.35v1.3h.05c.46-.88 1.6-1.8 3.3-1.8 3.53 0 4.18 2.32 4.18 5.33V20h-3.5v-4.02c0-1.04-.02-2.38-1.45-2.38-1.46 0-1.68 1.14-1.68 2.3V20H14V10.5z" fill="#fff"/>
+    </svg>
+    <div class="sb-brand-text">LinkedIn Agent<span>Powered by Claude</span></div>
+  </div>
+
+  <div class="sb-section">11 Skills</div>
+  <div class="sb-skills" id="skill-list"></div>
+
+  <div class="sb-footer">
+    <div class="api-wrap">
+      <label>Claude API Key</label>
+      <input type="password" class="api-input" id="api-key" placeholder="sk-ant-…" oninput="onKeyInput()"/>
+      <div class="api-status" id="key-status">✓ Key saved</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="topbar">
+    <div>
+      <div class="tb-title" id="tb-title">LinkedIn AI Agent</div>
+      <div class="tb-sub" id="tb-sub">Select a skill to get started</div>
+    </div>
+    <div class="tb-badge" id="tb-badge">Ready</div>
+  </div>
+
+  <div id="context-bar">
+    <div class="ctx-field">
+      <label>Your Name / Voice</label>
+      <input class="ctx-input" id="ctx-name" placeholder="e.g. Praveen, Oracle Lead" value="Praveen"/>
+    </div>
+    <div class="ctx-field">
+      <label>Industry / Role</label>
+      <input class="ctx-input" id="ctx-role" placeholder="e.g. Oracle OFSLL, FinTech" value="Oracle OFSLL · FinTech"/>
+    </div>
+    <div class="ctx-field">
+      <label>Tone</label>
+      <input class="ctx-input" id="ctx-tone" placeholder="e.g. Confident, Technical" value="Confident, Technical, Insightful"/>
+    </div>
+    <div class="ctx-field">
+      <label>Target Audience</label>
+      <input class="ctx-input" id="ctx-audience" placeholder="e.g. CTOs, Engineers" value="CTOs, Architects, Engineers"/>
+    </div>
+  </div>
+
+  <div id="output-area">
+    <div class="welcome-card">
+      <h2>Your LinkedIn AI Agent</h2>
+      <p>Write human-sounding posts, craft engaging comments, plan your 7-day content schedule — all in your voice. Nothing posts without your approval.</p>
+      <div class="skill-grid" id="quick-grid"></div>
+    </div>
+  </div>
+
+  <div id="prompt-zone">
+    <div class="pz-inner">
+      <textarea id="prompt-input" placeholder="Describe what you want to create…" rows="1" onkeydown="onPromptKey(event)" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="send()">Generate →</button>
+    </div>
+    <div class="pz-hint">Tip: Select a skill on the left, then describe your topic here.</div>
+  </div>
+</div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  SKILLS DEFINITION — all 11
+// ══════════════════════════════════════════════
+const SKILLS = [
+  {
+    id:'post-writer',
+    icon:'✍️',
+    name:'Post Writer',
+    desc:'Viral-ready LinkedIn posts',
+    badge:'Writer',
+    prompt: (ctx,user) => `You are an expert LinkedIn content strategist writing in the voice of ${ctx.name}, a ${ctx.role} professional.
+
+TASK: Write a high-performing LinkedIn post about: "${user}"
+
+RULES:
+- Tone: ${ctx.tone}
+- Audience: ${ctx.audience}
+- Open with a single-line hook that stops the scroll (no "I'm excited to share")
+- Use short punchy paragraphs (1-2 sentences max)
+- Include 1 insight, 1 story element or data point, 1 takeaway
+- End with a genuine question that invites comments
+- No AI buzzwords: never use "delve", "leverage", "harness", "synergy", "game-changer", "unlock", "navigate"
+- No em dashes (—), no bullet walls
+- Add 3-5 relevant hashtags at the end
+- Length: 150-250 words
+- Sound like a real person writing from experience
+
+Format your response:
+### DRAFT POST
+[the post]
+
+### WHY IT WORKS
+[2-3 bullet points explaining the hook, structure, and CTA]
+
+### VARIATIONS
+Provide 2 shorter alternative opening hooks.`
+  },
+  {
+    id:'humanizer',
+    icon:'🧬',
+    name:'Humanizer',
+    desc:'Strip AI tells from any draft',
+    badge:'Humanizer',
+    prompt: (ctx,user) => `You are a LinkedIn content humanizer. Your job is to rewrite AI-sounding text to sound like ${ctx.name}, a real ${ctx.role} professional.
+
+ORIGINAL TEXT TO HUMANIZE:
+"${user}"
+
+HUMANIZER RULES — strip ALL of these:
+❌ Words to remove: delve, leverage, harness, synergy, game-changer, unlock, navigate, foster, empower, robust, seamlessly, revolutionize, groundbreaking, transformative, cutting-edge, innovative
+❌ Remove: em dashes (—), excessive ellipses, rule-of-three lists that sound AI-generated
+❌ Remove: vague openers like "In today's fast-paced world", "In the realm of", "It's no secret that"
+❌ Remove: hollow closers like "Feel free to reach out", "I'd love to connect"
+
+✅ Replace with: specific personal language, real numbers if possible, concrete actions, casual transitions
+✅ Tone: ${ctx.tone}
+✅ Keep the core message and structure
+
+Format:
+### HUMANIZED VERSION
+[rewritten text]
+
+### CHANGES MADE
+[bullet list of key edits]
+
+### AI-DETECTOR SCORE
+Rate the original and rewritten version on a 1-10 AI-sounding scale (1=human, 10=robot).`
+  },
+  {
+    id:'comment-drafter',
+    icon:'💬',
+    name:'Comment Drafter',
+    desc:'Comments that get noticed',
+    badge:'Comments',
+    prompt: (ctx,user) => `You are a LinkedIn engagement expert writing comments in the voice of ${ctx.name}, ${ctx.role}.
+
+POST OR TOPIC TO COMMENT ON:
+"${user}"
+
+Write 3 different comment options:
+
+COMMENT 1 — "Add insight" style: Add a data point or perspective the OP didn't mention (2-3 sentences)
+COMMENT 2 — "Agree + extend" style: Validate their point then extend it with your own experience (2-3 sentences)  
+COMMENT 3 — "Thoughtful question" style: Ask a specific question that shows you read carefully (1-2 sentences)
+
+Rules for all comments:
+- Sound like ${ctx.name} speaking from ${ctx.role} experience
+- No "Great post!", "Love this!", "So insightful!" openers
+- No em dashes, no AI buzzwords
+- Start with the substance immediately
+- Tone: ${ctx.tone}
+
+Format each as:
+### COMMENT [N] — [Type]
+[comment text]
+*Best when: [situation to use this]*`
+  },
+  {
+    id:'reply-handler',
+    icon:'↩️',
+    name:'Reply Handler',
+    desc:'Handle comments on your posts',
+    badge:'Replies',
+    prompt: (ctx,user) => `You are ${ctx.name}'s LinkedIn reply strategist. Write replies to comments on ${ctx.name}'s posts.
+
+COMMENT(S) TO REPLY TO:
+"${user}"
+
+Write a reply for each comment that:
+- Acknowledges their specific point (not generic "thanks!")
+- Adds value: a new insight, a counter-perspective, or a follow-up question
+- Keeps conversation going naturally
+- Is concise: 1-3 sentences max
+- Sounds like ${ctx.name} (${ctx.role}, tone: ${ctx.tone})
+- No AI buzzwords
+
+Format:
+### REPLY
+[reply text]
+
+### WHY THIS WORKS
+[one-line explanation]`
+  },
+  {
+    id:'hook-extractor',
+    icon:'🎣',
+    name:'Hook Extractor',
+    desc:'Extract hooks from viral posts',
+    badge:'Hooks',
+    prompt: (ctx,user) => `You are a LinkedIn hook analyst. Analyze this viral post and extract its hook formula.
+
+POST TO ANALYZE:
+"${user}"
+
+Provide:
+
+### HOOK FORMULA USED
+Name and explain the hook type (e.g., Contrarian, Curiosity Gap, Specific Number, Personal Story, Bold Claim)
+
+### WHY IT WORKS
+2-3 specific reasons this hook stops the scroll
+
+### RECREATE FOR ${ctx.name.toUpperCase()}
+Write 3 new hooks using the SAME formula but for topics relevant to ${ctx.role}:
+1. [hook 1]
+2. [hook 2]
+3. [hook 3]
+
+### HOOK RATING
+Score the original hook: /10 for Curiosity, Specificity, Relevance, Originality`
+  },
+  {
+    id:'content-planner',
+    icon:'📅',
+    name:'7-Day Planner',
+    desc:'Full week content calendar',
+    badge:'Planner',
+    prompt: (ctx,user) => `You are a LinkedIn content strategist. Create a 7-day posting plan for ${ctx.name}, ${ctx.role}.
+
+FOCUS THEME / CONTEXT:
+"${user || 'General professional expertise and career insights'}"
+
+Build a complete 7-day LinkedIn content calendar:
+
+For each day provide:
+- Post type (Personal Story / Insight / How-To / Contrarian / Data / Q&A / Celebration)
+- Hook (opening line only)
+- Core idea (2-3 sentences)
+- CTA (closing engagement question)
+- Best posting time for India timezone
+- Hashtags (3-4)
+
+RULES:
+- Mix formats: don't repeat same post type back-to-back
+- Day 1 and Day 4 should be high-engagement "reach" posts
+- Day 3 and Day 6 should be thought leadership / expertise posts
+- Include 1 personal story post
+- Audience: ${ctx.audience}
+- Tone: ${ctx.tone}
+
+Format as a clear table, then expand each day below.`
+  },
+  {
+    id:'profile-optimizer',
+    icon:'👤',
+    name:'Profile Optimizer',
+    desc:'Headline, About, Experience rewrites',
+    badge:'Profile',
+    prompt: (ctx,user) => `You are a LinkedIn profile optimization expert. Optimize ${ctx.name}'s LinkedIn profile section.
+
+CURRENT CONTENT / ROLE INFO:
+"${user}"
+
+Provide rewrites for:
+
+### HEADLINE (220 chars max)
+Write 3 headline options that go beyond job title — show value, audience, and outcome.
+
+### ABOUT SECTION (2,600 chars max — write 800 words)
+- Open with a hook (not "I am a...")
+- Tell their story: background → what they do → why it matters → who they help
+- Include social proof signals
+- End with a clear CTA
+- Sound like ${ctx.name}, tone: ${ctx.tone}
+
+### EXPERIENCE BULLET POINTS
+For their role as ${ctx.role}, write 4 achievement-focused bullets using CAR format (Challenge → Action → Result) with metrics where possible.
+
+No AI buzzwords throughout.`
+  },
+  {
+    id:'audit',
+    icon:'🔍',
+    name:'Pre-Publish Audit',
+    desc:'Check before you post',
+    badge:'Audit',
+    prompt: (ctx,user) => `You are a LinkedIn content auditor. Run a pre-publish quality check on this post.
+
+POST TO AUDIT:
+"${user}"
+
+Run these checks:
+
+### ✅ ALGORITHM CHECK
+- Hook strength: Does line 1 stop scroll? (Y/N + explanation)
+- Length: Optimal for LinkedIn? (ideal: 150-300 words for reach)
+- Line breaks: Are paragraphs short enough for mobile?
+- CTA: Does it invite engagement?
+
+### ✅ AI-DETECTOR CHECK  
+List every AI-sounding phrase found (buzzwords, em dashes, hollow openers/closers)
+
+### ✅ VOICE CHECK
+Does this sound like a real ${ctx.role} professional? What feels generic?
+
+### ✅ HASHTAG CHECK
+Are the hashtags relevant and sized correctly? (Mix of niche + mid + broad)
+
+### FINAL VERDICT
+PUBLISH READY / NEEDS EDITS / MAJOR REVISION
+
+### EDITED VERSION
+Provide the post with all issues fixed.`
+  },
+  {
+    id:'engager-analytics',
+    icon:'📊',
+    name:'Engager Analytics',
+    desc:'Analyse who engages with posts',
+    badge:'Analytics',
+    prompt: (ctx,user) => `You are a LinkedIn ICP (Ideal Customer Profile) analyst. Analyze engagement patterns.
+
+CONTEXT / POST TOPIC / ENGAGEMENT DATA:
+"${user}"
+
+Provide a strategic engagement analysis:
+
+### LIKELY ENGAGER PROFILES
+Based on the topic, predict the ICP segments most likely to engage:
+- Profile type, seniority, industry
+- What they care about
+- Why this post would resonate
+
+### ENGAGEMENT STRATEGY
+For each ICP segment:
+- What comment to leave on their posts to start a relationship
+- What to DM them after they engage
+- How to turn them into a warm lead or collaborator
+
+### CONTENT RECOMMENDATIONS
+Based on who engages, what 3 follow-up posts would deepen the relationship with this audience?
+
+### OPTIMAL TIMING
+Best days/times to post for ${ctx.audience} audience in ${ctx.role} space.`
+  },
+  {
+    id:'thread-monitor',
+    icon:'🧵',
+    name:'Thread Monitor',
+    desc:'Track post comment threads',
+    badge:'Monitor',
+    prompt: (ctx,user) => `You are a LinkedIn thread management expert for ${ctx.name}.
+
+THREAD / COMMENTS TO MANAGE:
+"${user}"
+
+Analyze the comment thread and provide:
+
+### THREAD HEALTH SCORE
+Rate the engagement quality: /10 for Depth, Sentiment, ICP Quality, Virality potential
+
+### PRIORITY REPLIES NEEDED
+Rank which comments need replies FIRST and why (by engagement potential)
+
+### REPLY SCRIPTS
+Write ready-to-send replies for the top 3 comments in ${ctx.name}'s voice (${ctx.tone}).
+
+### THREAD EXTENDER
+Suggest a follow-up comment ${ctx.name} can add to re-ignite the thread after 24hrs.
+
+### SAVE TO NURTURE LIST
+Identify which commenters ${ctx.name} should add to their warm outreach list and why.`
+  },
+  {
+    id:'employee-advocacy',
+    icon:'📢',
+    name:'Employee Advocacy',
+    desc:'Company posts for your team',
+    badge:'Advocacy',
+    prompt: (ctx,user) => `You are an employee advocacy content strategist. Write LinkedIn posts that ${ctx.name} can share to advocate for their company/team.
+
+COMPANY NEWS / TOPIC / ACHIEVEMENT:
+"${user}"
+
+Write 3 advocacy post options:
+
+POST 1 — "Proud insider" perspective: Personal take on company news (150 words)
+POST 2 — "What this means for the industry" framing: Thought leadership angle (200 words)  
+POST 3 — "Team spotlight" style: Celebrate the people behind the achievement (150 words)
+
+Rules:
+- All posts sound like ${ctx.name} personally, not a press release
+- Lead with ${ctx.name}'s personal reaction, not the announcement
+- Tone: ${ctx.tone}
+- Audience: ${ctx.audience}
+- No corporate jargon, no AI buzzwords
+- Each ends with a genuine question or insight`
+  }
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let activeSkill = SKILLS[0];
+let apiKey = localStorage.getItem('li_api_key') || '';
+let conversation = [];
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  if (apiKey) {
+    document.getElementById('api-key').value = apiKey;
+    document.getElementById('key-status').classList.add('show');
+  }
+
+  renderSidebar();
+  renderQuickGrid();
+  setActiveSkill(SKILLS[0]);
+});
+
+function renderSidebar() {
+  const list = document.getElementById('skill-list');
+  list.innerHTML = SKILLS.map(s => `
+    <button class="skill-btn ${s.id===activeSkill.id?'active':''}" onclick="setActiveSkill(SKILLS.find(x=>x.id==='${s.id}'))">
+      <span class="sk-icon">${s.icon}</span>
+      <span class="sk-info">
+        <span class="sk-name">${s.name}</span>
+        <span class="sk-desc">${s.desc}</span>
+      </span>
+    </button>
+  `).join('');
+}
+
+function renderQuickGrid() {
+  const grid = document.getElementById('quick-grid');
+  grid.innerHTML = SKILLS.slice(0,6).map(s => `
+    <div class="sg-item" onclick="setActiveSkill(SKILLS.find(x=>x.id==='${s.id}')); document.getElementById('prompt-input').focus()">
+      <div class="icon">${s.icon}</div>
+      <div class="name">${s.name}</div>
+      <div class="desc">${s.desc}</div>
+    </div>
+  `).join('');
+}
+
+function setActiveSkill(skill) {
+  activeSkill = skill;
+  document.getElementById('tb-title').textContent = skill.icon + '  ' + skill.name;
+  document.getElementById('tb-sub').textContent = skill.desc;
+  document.getElementById('tb-badge').textContent = skill.badge;
+  document.getElementById('prompt-input').placeholder = getPlaceholder(skill.id);
+  renderSidebar();
+}
+
+function getPlaceholder(id) {
+  const map = {
+    'post-writer':       'What topic do you want to post about? e.g. "How AI is changing Oracle OFSLL implementations"',
+    'humanizer':         'Paste your AI-written draft here to humanize it…',
+    'comment-drafter':   'Paste the LinkedIn post you want to comment on…',
+    'reply-handler':     'Paste the comments you received on your post…',
+    'hook-extractor':    'Paste a viral LinkedIn post to extract its hook formula…',
+    'content-planner':   'What theme or topic area should the 7-day plan focus on?',
+    'profile-optimizer': 'Paste your current headline/about section or describe your role…',
+    'audit':             'Paste the post you want to audit before publishing…',
+    'engager-analytics': 'Describe your post topic or paste engagement data…',
+    'thread-monitor':    'Paste the comment thread from your post…',
+    'employee-advocacy': 'What company news or achievement to write about?',
+  };
+  return map[id] || 'Describe what you want…';
+}
+
+// ══════════════════════════════════════════════
+//  API KEY
+// ══════════════════════════════════════════════
+function onKeyInput() {
+  apiKey = document.getElementById('api-key').value.trim();
+  localStorage.setItem('li_api_key', apiKey);
+  const status = document.getElementById('key-status');
+  status.classList.toggle('show', apiKey.length > 10);
+}
+
+// ══════════════════════════════════════════════
+//  SEND
+// ══════════════════════════════════════════════
+async function send() {
+  const input = document.getElementById('prompt-input');
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  if (!apiKey) {
+    showToast('⚠️ Add your Claude API key in the sidebar');
+    return;
+  }
+
+  const ctx = {
+    name:     document.getElementById('ctx-name').value.trim() || 'the user',
+    role:     document.getElementById('ctx-role').value.trim() || 'professional',
+    tone:     document.getElementById('ctx-tone').value.trim() || 'professional',
+    audience: document.getElementById('ctx-audience').value.trim() || 'professionals',
+  };
+
+  input.value = '';
+  autoResize(input);
+
+  // add user message
+  addMsg('user', userText);
+
+  // add thinking
+  const thinkId = addThinking();
+
+  const systemPrompt = activeSkill.prompt(ctx, userText);
+
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userText }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      removeEl(thinkId);
+      addMsg('agent', `❌ API Error: ${data.error.message}`, true);
+    } else {
+      const text = data.content.map(b => b.text || '').join('');
+      removeEl(thinkId);
+      addAgentCard(text, activeSkill);
+    }
+  } catch(e) {
+    removeEl(thinkId);
+    addMsg('agent', `❌ Error: ${e.message}`, true);
+  }
+
+  document.getElementById('send-btn').disabled = false;
+}
+
+// ══════════════════════════════════════════════
+//  MESSAGE RENDERING
+// ══════════════════════════════════════════════
+function addMsg(role, text) {
+  const area = document.getElementById('output-area');
+  const div = document.createElement('div');
+  div.className = role === 'user' ? 'msg-user' : 'agent-body';
+  div.textContent = text;
+  if (role === 'user') {
+    div.style.alignSelf = 'flex-end';
+    div.style.maxWidth = '70%';
+    div.style.background = 'var(--li)';
+    div.style.color = '#fff';
+    div.style.borderRadius = '14px 14px 4px 14px';
+    div.style.padding = '11px 15px';
+    div.style.fontSize = '14px';
+    div.style.marginLeft = 'auto';
+  }
+  area.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'end'});
+  return div;
+}
+
+function addThinking() {
+  const area = document.getElementById('output-area');
+  const id = 'think_' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg-thinking';
+  div.innerHTML = `${activeSkill.icon} <span style="font-size:13px">Generating with <strong>${activeSkill.name}</strong> skill…</span> <div class="dots"><span></span><span></span><span></span></div>`;
+  area.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'end'});
+  return id;
+}
+
+function removeEl(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function addAgentCard(text, skill) {
+  const area = document.getElementById('output-area');
+  const card = document.createElement('div');
+  card.className = 'msg-agent';
+
+  // parse markdown-ish headings
+  const formatted = text
+    .replace(/### (.+)/g, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/---/g, '<hr>');
+
+  const copyId = 'copy_' + Date.now();
+
+  card.innerHTML = `
+    <div class="agent-card">
+      <div class="agent-header">
+        <span class="agent-icon">${skill.icon}</span>
+        <span class="agent-skill-name">${skill.name} · ${skill.badge}</span>
+      </div>
+      <div class="agent-body">${formatted}</div>
+      <div class="agent-actions">
+        <button class="act-btn primary" id="${copyId}" onclick="copyText(this, \`${escapeBacktick(text)}\`)">Copy to clipboard</button>
+        <button class="act-btn" onclick="refine(this, \`${escapeBacktick(text)}\`)">Refine this →</button>
+        <button class="act-btn" onclick="openLinkedIn()">Open LinkedIn ↗</button>
+        <button class="act-btn danger" onclick="this.closest('.msg-agent').remove()">Discard</button>
+      </div>
+    </div>
+  `;
+
+  area.appendChild(card);
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function escapeBacktick(str) {
+  return str.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copy-done');
+    setTimeout(() => {
+      btn.textContent = 'Copy to clipboard';
+      btn.classList.remove('copy-done');
+    }, 2000);
+  });
+}
+
+function refine(btn, prevText) {
+  const input = document.getElementById('prompt-input');
+  input.value = `Refine this — make it punchier and more personal:\n\n${prevText.substring(0,300)}…`;
+  autoResize(input);
+  input.focus();
+  showToast('Edit the prompt above and hit Generate →');
+}
+
+function openLinkedIn() {
+  window.open('https://www.linkedin.com/feed/', '_blank');
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function onPromptKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Neon Air Draw</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0e0e0e;font-family:'Inter',sans-serif;overflow:hidden;user-select:none}
+
+/* ══ SPLASH ══ */
+#splash{
+  position:fixed;inset:0;z-index:999;background:#0e0e0e;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+}
+#splash.gone{display:none}
+.sp-title{font-size:42px;font-weight:900;letter-spacing:-1px;margin-bottom:4px}
+.sp-title em{font-style:normal;color:#ff79c6}
+.sp-sub{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:32px;letter-spacing:0.3px}
+.sp-cards{display:flex;gap:10px;margin-bottom:32px;flex-wrap:wrap;justify-content:center;padding:0 16px}
+.sp-card{
+  width:90px;padding:14px 8px 11px;
+  background:#181818;border:1px solid #2a2a2a;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+.sp-card .ico{font-size:28px;line-height:1}
+.sp-card .act{font-size:11px;font-weight:700;color:#ff79c6}
+.sp-card .lbl{font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,0.3);text-transform:uppercase}
+#go-btn{
+  padding:14px 52px;background:#ff79c6;border:none;border-radius:100px;
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;color:#0e0e0e;
+  cursor:pointer;box-shadow:0 0 28px rgba(255,121,198,0.5);transition:all 0.15s;
+}
+#go-btn:hover{box-shadow:0 0 44px rgba(255,121,198,0.75);transform:scale(1.03)}
+
+/* ══ APP ══ */
+#app{position:relative;width:100%;height:100dvh;display:none}
+video{display:none}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+#c-cam{z-index:1}
+#c-draw{z-index:2;pointer-events:none}
+#c-hand{z-index:3;pointer-events:none}   /* landmark overlay */
+
+/* ══ RIGHT PANEL ══ */
+#panel{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:20;
+  background:rgba(18,18,18,0.88);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+  padding:12px 9px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:48px;
+}
+.p-label{font-size:7px;font-weight:700;letter-spacing:1.8px;color:rgba(255,255,255,0.25);text-transform:uppercase}
+.p-div{width:30px;height:1px;background:rgba(255,255,255,0.09)}
+.swatch{
+  width:24px;height:24px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;transition:all 0.15s;flex-shrink:0;
+}
+.swatch.on{border-color:#fff;transform:scale(1.22);box-shadow:0 0 8px currentColor}
+.vslider-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.vslider-wrap span{font-size:7px;letter-spacing:1px;color:rgba(255,255,255,0.25);text-transform:uppercase}
+input[type=range]{
+  -webkit-appearance:none;writing-mode:vertical-lr;direction:rtl;
+  width:6px;height:64px;border-radius:3px;background:rgba(255,255,255,0.1);
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:#ff79c6;box-shadow:0 0 6px #ff79c6;
+}
+.tool-row{display:flex;flex-direction:column;gap:6px;align-items:center}
+.tbtn{
+  width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);
+  background:transparent;color:rgba(255,255,255,0.45);font-size:15px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+}
+.tbtn:hover,.tbtn.on{background:rgba(255,121,198,0.18);border-color:#ff79c6;color:#ff79c6}
+.tbtn.danger:hover{background:rgba(255,80,80,0.18);border-color:#ff5050;color:#ff5050}
+
+/* ══ MODE BADGE ══ */
+#badge{
+  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:20;
+  padding:8px 22px;border-radius:100px;
+  background:rgba(14,14,14,0.72);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.1);
+  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;
+  pointer-events:none;white-space:nowrap;
+  transition:color 0.2s,border-color 0.2s;
+}
+#badge.drawing{color:#ff79c6;border-color:rgba(255,121,198,0.35)}
+#badge.grabbing{color:#f1c40f;border-color:rgba(241,196,15,0.35)}
+#badge.erasing{color:#ff5555;border-color:rgba(255,85,85,0.35)}
+
+/* ══ TOP STATUS ══ */
+#topbar{
+  position:absolute;top:0;left:0;right:0;z-index:20;
+  padding:12px 14px 0;
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(180deg,rgba(14,14,14,0.75) 0%,transparent 100%);
+}
+.logo{font-size:16px;font-weight:900;letter-spacing:-0.3px}
+.logo em{font-style:normal;color:#ff79c6}
+#cam-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:0.5px}
+.cdot{width:6px;height:6px;border-radius:50%;background:#333}
+.cdot.live{background:#50fa7b;box-shadow:0 0 7px #50fa7b;animation:bl 1.4s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:0.25}}
+
+/* cursor ring */
+#ring{position:absolute;z-index:25;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);display:none;transition:width .1s,height .1s}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-title">Neon <em>Air Draw</em></div>
+  <div class="sp-sub">Draw in thin air with your hands ✦</div>
+  <div class="sp-cards">
+    <div class="sp-card"><div class="ico">☝️</div><div class="act">DRAW</div><div class="lbl">Index up</div></div>
+    <div class="sp-card"><div class="ico">✌️</div><div class="act">GRAB</div><div class="lbl">Two fingers</div></div>
+    <div class="sp-card"><div class="ico">🖐</div><div class="act">ERASE</div><div class="lbl">Open palm</div></div>
+    <div class="sp-card"><div class="ico">✊</div><div class="act">PAUSE</div><div class="lbl">Fist</div></div>
+  </div>
+  <button id="go-btn">✦ Start Drawing</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <video id="vid" playsinline autoplay muted></video>
+  <canvas id="c-cam"></canvas>
+  <canvas id="c-draw"></canvas>
+  <canvas id="c-hand"></canvas>
+  <div id="ring"></div>
+
+  <div id="topbar">
+    <div class="logo">Neon <em>Air Draw</em></div>
+    <div id="cam-pill"><div class="cdot" id="cdot"></div><span id="clabel">waiting…</span></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="panel">
+    <div class="p-label">Color</div>
+    <div class="swatch on"  data-c="#ff79c6" style="background:#ff79c6;color:#ff79c6"></div>
+    <div class="swatch"     data-c="#ff5555" style="background:#ff5555;color:#ff5555"></div>
+    <div class="swatch"     data-c="#8be9fd" style="background:#8be9fd;color:#8be9fd"></div>
+    <div class="swatch"     data-c="#f1fa8c" style="background:#f1fa8c;color:#f1fa8c"></div>
+    <div class="swatch"     data-c="#bd93f9" style="background:#bd93f9;color:#bd93f9"></div>
+    <div class="swatch"     data-c="#50fa7b" style="background:#50fa7b;color:#50fa7b"></div>
+    <div class="swatch"     data-c="#ffffff" style="background:#fff;color:#fff"></div>
+    <div class="p-div"></div>
+    <div class="p-label">Size</div>
+    <div class="vslider-wrap">
+      <input type="range" id="sl-size" min="2" max="24" value="5"/>
+      <span>px</span>
+    </div>
+    <div class="p-div"></div>
+    <div class="p-label">Glow</div>
+    <div class="vslider-wrap">
+      <input type="range" id="sl-glow" min="0" max="40" value="16"/>
+      <span>%</span>
+    </div>
+    <div class="p-div"></div>
+    <div class="tool-row">
+      <button class="tbtn danger" id="btn-clear" title="Clear">🗑</button>
+      <button class="tbtn" id="btn-save" title="Save">💾</button>
+    </div>
+  </div>
+
+  <div id="badge">— IDLE —</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+// ─────────────────────────────────────────────
+//  CONSTANTS
+// ─────────────────────────────────────────────
+const DEBOUNCE_FRAMES = 6;   // frames gesture must hold before activating
+const SMOOTH          = 0.22; // cursor smoothing (lower = smoother)
+const MIN_MOVE_PX     = 2.5;  // min movement to add a draw point
+const ERASE_R         = 38;   // erase radius px
+
+// Landmark connections for hand skeleton
+const CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17]
+];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let W=0, H=0;
+let drawColor = '#ff79c6';
+let brushSize = 5;
+let glowBlur  = 16;
+
+// Strokes: [{color,size,blur,pts:[{x,y}]}]
+let strokes=[], activeStroke=null, lastPt=null;
+
+// Cursor (smoothed)
+let cx=0, cy=0;
+
+// Gesture debounce
+let pendingG=null, gFrames=0, curMode='idle';
+
+// Grab state
+let grabIdx=-1, grabOffsets=[];
+
+// Video frame ref
+let vFrame=null;
+
+// ─────────────────────────────────────────────
+//  DOM
+// ─────────────────────────────────────────────
+const camC  = document.getElementById('c-cam');
+const drawC = document.getElementById('c-draw');
+const handC = document.getElementById('c-hand');
+const camX  = camC.getContext('2d');
+const drawX = drawC.getContext('2d');
+const handX = handC.getContext('2d');
+const vid   = document.getElementById('vid');
+const ring  = document.getElementById('ring');
+const badge = document.getElementById('badge');
+const cdot  = document.getElementById('cdot');
+const clab  = document.getElementById('clabel');
+
+// ─────────────────────────────────────────────
+//  RESIZE
+// ─────────────────────────────────────────────
+function resize(){
+  W=window.innerWidth; H=window.innerHeight;
+  [camC,drawC,handC].forEach(c=>{c.width=W;c.height=H});
+  redrawAll();
+}
+window.addEventListener('resize',resize); resize();
+
+// ─────────────────────────────────────────────
+//  PANEL WIRING
+// ─────────────────────────────────────────────
+document.querySelectorAll('.swatch').forEach(s=>s.addEventListener('click',()=>{
+  document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on'));
+  s.classList.add('on'); drawColor=s.dataset.c;
+}));
+document.getElementById('sl-size').addEventListener('input',e=>brushSize=+e.target.value);
+document.getElementById('sl-glow').addEventListener('input',e=>glowBlur=+e.target.value);
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  strokes=[]; activeStroke=null; lastPt=null; grabIdx=-1;
+  drawX.clearRect(0,0,W,H);
+});
+document.getElementById('btn-save').addEventListener('click',saveImg);
+
+// ─────────────────────────────────────────────
+//  DRAWING ENGINE
+// ─────────────────────────────────────────────
+function redrawAll(){
+  drawX.clearRect(0,0,W,H);
+  strokes.forEach(paintStroke);
+  if(activeStroke) paintStroke(activeStroke);
+}
+
+function paintStroke(s){
+  if(s.pts.length<2) return;
+  drawX.save();
+  drawX.lineCap='round'; drawX.lineJoin='round';
+  // glow pass
+  drawX.globalAlpha=0.4;
+  drawX.lineWidth=s.size*3;
+  drawX.strokeStyle=s.color;
+  drawX.filter=`blur(${s.blur}px)`;
+  pathThrough(s.pts); drawX.stroke();
+  // core
+  drawX.globalAlpha=1;
+  drawX.filter='none';
+  drawX.lineWidth=s.size;
+  drawX.strokeStyle=s.color;
+  pathThrough(s.pts); drawX.stroke();
+  // white centre
+  drawX.lineWidth=Math.max(1,s.size*0.25);
+  drawX.strokeStyle='rgba(255,255,255,0.65)';
+  pathThrough(s.pts); drawX.stroke();
+  drawX.restore();
+}
+
+function pathThrough(pts){
+  drawX.beginPath();
+  drawX.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++){
+    const mx=(pts[i-1].x+pts[i].x)/2, my=(pts[i-1].y+pts[i].y)/2;
+    drawX.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx,my);
+  }
+  drawX.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+}
+
+// ─────────────────────────────────────────────
+//  ERASE
+// ─────────────────────────────────────────────
+function eraseAt(ex,ey){
+  const r2=ERASE_R*ERASE_R;
+  strokes=strokes.flatMap(s=>{
+    const segs=[]; let cur=[];
+    for(const p of s.pts){
+      if((p.x-ex)**2+(p.y-ey)**2<r2){
+        if(cur.length>1) segs.push({...s,pts:[...cur]}); cur=[];
+      } else cur.push(p);
+    }
+    if(cur.length>1) segs.push({...s,pts:[...cur]});
+    return segs;
+  });
+  redrawAll();
+}
+
+// ─────────────────────────────────────────────
+//  GRAB — find nearest stroke
+// ─────────────────────────────────────────────
+function findNearestStroke(x,y,thresh=60){
+  let best=-1, bestD=thresh*thresh;
+  for(let i=strokes.length-1;i>=0;i--){
+    for(const p of strokes[i].pts){
+      const d=(p.x-x)**2+(p.y-y)**2;
+      if(d<bestD){bestD=d;best=i;}
+    }
+  }
+  return best;
+}
+
+function beginGrab(x,y){
+  grabIdx=findNearestStroke(x,y);
+  if(grabIdx>=0){
+    grabOffsets=strokes[grabIdx].pts.map(p=>({dx:p.x-x,dy:p.y-y}));
+  }
+}
+
+function moveGrab(x,y){
+  if(grabIdx<0) return;
+  strokes[grabIdx].pts=grabOffsets.map(o=>({x:x+o.dx,y:y+o.dy}));
+  redrawAll();
+}
+
+// ─────────────────────────────────────────────
+//  SAVE
+// ─────────────────────────────────────────────
+function saveImg(){
+  const tmp=document.createElement('canvas');
+  tmp.width=W; tmp.height=H;
+  const tc=tmp.getContext('2d');
+  tc.save(); tc.scale(-1,1); tc.drawImage(vid,-W,0,W,H); tc.restore();
+  tc.fillStyle='rgba(0,0,0,0.25)'; tc.fillRect(0,0,W,H);
+  tc.drawImage(drawC,0,0);
+  const a=document.createElement('a');
+  a.href=tmp.toDataURL('image/png'); a.download='neon-air-draw.png'; a.click();
+}
+
+// ─────────────────────────────────────────────
+//  WEBCAM RENDER LOOP
+// ─────────────────────────────────────────────
+function renderCam(){
+  requestAnimationFrame(renderCam);
+  camX.clearRect(0,0,W,H);
+  if(vFrame){
+    camX.save(); camX.scale(-1,1); camX.drawImage(vFrame,-W,0,W,H); camX.restore();
+    camX.fillStyle='rgba(0,0,0,0.18)'; camX.fillRect(0,0,W,H);
+  } else {
+    camX.fillStyle='#0e0e0e'; camX.fillRect(0,0,W,H);
+  }
+}
+renderCam();
+
+// ─────────────────────────────────────────────
+//  HAND LANDMARK DRAW
+// ─────────────────────────────────────────────
+function drawLandmarks(lm){
+  handX.clearRect(0,0,W,H);
+  const pts=lm.map(p=>({x:(1-p.x)*W, y:p.y*H}));
+  // connections
+  handX.save();
+  handX.strokeStyle='rgba(255,255,255,0.28)';
+  handX.lineWidth=1.2;
+  CONNECTIONS.forEach(([a,b])=>{
+    handX.beginPath();
+    handX.moveTo(pts[a].x,pts[a].y);
+    handX.lineTo(pts[b].x,pts[b].y);
+    handX.stroke();
+  });
+  // dots
+  pts.forEach((p,i)=>{
+    handX.beginPath();
+    handX.arc(p.x,p.y,i===0?5:3,0,Math.PI*2);
+    handX.fillStyle=i===8?drawColor:'rgba(255,255,255,0.6)';
+    handX.shadowColor=i===8?drawColor:'transparent';
+    handX.shadowBlur=i===8?10:0;
+    handX.fill();
+  });
+  handX.restore();
+}
+
+// ─────────────────────────────────────────────
+//  GESTURE DETECTION — precise per-finger logic
+// ─────────────────────────────────────────────
+/*
+  Landmark indices:
+  Thumb:  CMC=1 MCP=2 IP=3 TIP=4
+  Index:  MCP=5 PIP=6 DIP=7 TIP=8
+  Middle: MCP=9 PIP=10 DIP=11 TIP=12
+  Ring:   MCP=13 PIP=14 DIP=15 TIP=16
+  Pinky:  MCP=17 PIP=18 DIP=19 TIP=20
+
+  A finger is EXTENDED when its TIP is above (lower y) its PIP joint.
+  We use MCP as extra confirmation for stability.
+*/
+function isExtended(lm, tipId, pipId, mcpId){
+  // tip must be above pip by at least a small threshold to reduce noise
+  return lm[tipId].y < lm[pipId].y - 0.015;
+}
+
+function detectGesture(lm){
+  const idx = isExtended(lm,8,6,5);
+  const mid = isExtended(lm,12,10,9);
+  const rng = isExtended(lm,16,14,13);
+  const pnk = isExtended(lm,20,18,17);
+  const ext = [idx,mid,rng,pnk].filter(Boolean).length;
+
+  // ✊ Fist — no fingers up
+  if(ext===0) return 'pause';
+  // ☝️ Draw — only index up
+  if(idx && !mid && !rng && !pnk) return 'draw';
+  // ✌️ Grab — index + middle up only
+  if(idx && mid && !rng && !pnk) return 'grab';
+  // 🖐 Erase — 3 or more fingers extended
+  if(ext>=3) return 'erase';
+  // anything else → pause
+  return 'pause';
+}
+
+// Debounced gesture commit
+function processGesture(raw){
+  if(raw===pendingG){
+    gFrames++;
+    if(gFrames>=DEBOUNCE_FRAMES && raw!==curMode) applyMode(raw);
+  } else {
+    pendingG=raw; gFrames=1;
+  }
+}
+
+function commitCurrentStroke(){
+  if(activeStroke && activeStroke.pts.length>1) strokes.push(activeStroke);
+  activeStroke=null; lastPt=null;
+}
+
+function applyMode(m){
+  if(m===curMode) return;
+  // leaving draw → commit stroke
+  if(curMode==='draw') commitCurrentStroke();
+  // leaving grab → release
+  if(curMode==='grab') grabIdx=-1;
+
+  curMode=m;
+  updateBadge();
+
+  // entering grab → start looking for nearest stroke
+  if(m==='grab') beginGrab(cx,cy);
+}
+
+function updateBadge(){
+  badge.className='';
+  if(curMode==='draw')  {badge.textContent='✏️  DRAWING'; badge.className='drawing';}
+  else if(curMode==='grab') {badge.textContent='✌️  GRAB';  badge.className='grabbing';}
+  else if(curMode==='erase'){badge.textContent='🖐  ERASING'; badge.className='erasing';}
+  else                      {badge.textContent='— IDLE —';}
+}
+
+// ─────────────────────────────────────────────
+//  CURSOR TIP POSITIONS
+// ─────────────────────────────────────────────
+function tipPos(lm){
+  // index fingertip, mirrored x
+  return {x:(1-lm[8].x)*W, y:lm[8].y*H};
+}
+function grabPos(lm){
+  // midpoint of index+middle tips for grab
+  return {x:((1-lm[8].x)+(1-lm[12].x))*W/2, y:(lm[8].y+lm[12].y)*H/2};
+}
+function palmPos(lm){
+  const ids=[0,5,9,13,17];
+  let sx=0,sy=0;
+  ids.forEach(i=>{sx+=lm[i].x;sy+=lm[i].y});
+  return {x:(1-sx/ids.length)*W, y:sy/ids.length*H};
+}
+
+// ─────────────────────────────────────────────
+//  UPDATE CURSOR RING
+// ─────────────────────────────────────────────
+function updateRing(){
+  ring.style.display='block';
+  ring.style.left=cx+'px'; ring.style.top=cy+'px';
+  if(curMode==='draw'){
+    const s=Math.max(10,brushSize*2);
+    ring.style.width=ring.style.height=s+'px';
+    ring.style.background=drawColor;
+    ring.style.boxShadow=`0 0 ${glowBlur}px ${drawColor}`;
+    ring.style.border='none';
+  } else if(curMode==='erase'){
+    ring.style.width=ring.style.height=(ERASE_R*2)+'px';
+    ring.style.background='rgba(255,85,85,0.1)';
+    ring.style.boxShadow='0 0 0 2px rgba(255,85,85,0.7)';
+    ring.style.border='none';
+  } else if(curMode==='grab'){
+    ring.style.width=ring.style.height='22px';
+    ring.style.background='rgba(241,196,15,0.15)';
+    ring.style.boxShadow='0 0 0 2px rgba(241,196,15,0.8)';
+    ring.style.border='none';
+  } else {
+    ring.style.width=ring.style.height='14px';
+    ring.style.background='transparent';
+    ring.style.boxShadow='none';
+    ring.style.border='2px solid rgba(255,255,255,0.4)';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MEDIAPIPE HANDS
+// ─────────────────────────────────────────────
+function initHands(){
+  const hands=new Hands({
+    locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+  hands.setOptions({
+    maxNumHands:1,
+    modelComplexity:1,
+    minDetectionConfidence:0.78,
+    minTrackingConfidence:0.72,
+  });
+
+  hands.onResults(res=>{
+    vFrame=res.image;
+
+    if(!res.multiHandLandmarks||res.multiHandLandmarks.length===0){
+      // no hand visible — commit and reset
+      commitCurrentStroke();
+      grabIdx=-1; curMode='idle'; pendingG=null; gFrames=0;
+      updateBadge();
+      ring.style.display='none';
+      handX.clearRect(0,0,W,H);
+      return;
+    }
+
+    const lm=res.multiHandLandmarks[0];
+
+    // draw skeleton overlay
+    drawLandmarks(lm);
+
+    // gesture detection (debounced)
+    const raw=detectGesture(lm);
+    processGesture(raw);
+
+    // get target position based on mode
+    let target;
+    if(curMode==='erase') target=palmPos(lm);
+    else if(curMode==='grab') target=grabPos(lm);
+    else target=tipPos(lm);
+
+    // smooth cursor
+    cx=cx+(target.x-cx)*SMOOTH;
+    cy=cy+(target.y-cy)*SMOOTH;
+
+    updateRing();
+
+    // ── DRAW ──
+    if(curMode==='draw'){
+      if(!activeStroke) activeStroke={color:drawColor,size:brushSize,blur:glowBlur,pts:[]};
+      if(!lastPt||Math.hypot(cx-lastPt.x,cy-lastPt.y)>MIN_MOVE_PX){
+        activeStroke.pts.push({x:cx,y:cy});
+        lastPt={x:cx,y:cy};
+        redrawAll();
+      }
+    }
+
+    // ── GRAB ──
+    if(curMode==='grab'){
+      if(grabIdx<0) beginGrab(cx,cy); // retry if not grabbed yet
+      moveGrab(cx,cy);
+    }
+
+    // ── ERASE ──
+    if(curMode==='erase') eraseAt(cx,cy);
+  });
+
+  const cam=new Camera(vid,{
+    onFrame:async()=>{await hands.send({image:vid})},
+    width:1280,height:720
+  });
+  cam.start()
+    .then(()=>{cdot.classList.add('live');clab.textContent='Camera live';})
+    .catch(()=>{clab.textContent='Camera denied';});
+}
+
+// ─────────────────────────────────────────────
+//  START
+// ─────────────────────────────────────────────
+document.getElementById('go-btn').addEventListener('click',()=>{
+  document.getElementById('splash').classList.add('gone');
+  document.getElementById('app').style.display='block';
+  initHands();
+});
+</script>
+</body>
+</html>
