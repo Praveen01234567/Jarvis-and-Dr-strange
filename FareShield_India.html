@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FareShield India — Flight Price Intelligence</title>
+<style>
+:root{--bg:#07111f;--panel:#0d1a2b;--panel2:#111f33;--line:#21334b;--text:#edf4ff;--muted:#8fa3bd;--accent:#55a7ff;--good:#48d597;--warn:#ffc857;--bad:#ff6b7a}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,#14345a 0,#07111f 38%);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:28px 18px 50px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#55a7ff,#7b6cff);display:grid;place-items:center;font-weight:800}.brand h1{font-size:20px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.badge{border:1px solid #275074;background:#0b2036;padding:8px 12px;border-radius:20px;color:#9fd0ff;font-size:12px}
+.hero{margin:12px 0 22px}.hero h2{font-size:34px;margin:0 0 8px;letter-spacing:-1px}.hero p{color:var(--muted);margin:0;max-width:720px;line-height:1.5}
+.search{background:rgba(13,26,43,.94);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 18px 55px #0005}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{border:1px solid var(--line);background:#0b1626;color:var(--muted);padding:9px 15px;border-radius:10px;cursor:pointer}.tab.active{background:#173a60;color:#fff;border-color:#3679b5}
+.grid{display:grid;grid-template-columns:1.3fr 1.3fr 1fr 1fr .8fr;gap:10px}.field{background:#091523;border:1px solid #233951;border-radius:12px;padding:10px 12px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.field input,.field select{width:100%;background:none;border:0;color:#fff;outline:0;font-size:15px}.swap{position:absolute;right:-18px;top:20px;width:34px;height:34px;border-radius:50%;border:1px solid #31506f;background:#10243a;color:#fff;cursor:pointer}.route{position:relative}.searchbtn{border:0;border-radius:12px;background:linear-gradient(135deg,#55a7ff,#756cff);color:#fff;font-weight:700;font-size:14px;cursor:pointer;padding:0 18px}
+.note{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:12px;margin-top:12px}.dot{width:8px;height:8px;background:var(--good);border-radius:50%;box-shadow:0 0 12px #48d597}
+.main{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-top:18px}.panel{background:rgba(13,26,43,.9);border:1px solid var(--line);border-radius:16px;padding:16px}.panel h3{margin:0 0 4px;font-size:17px}.sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+.flight{border:1px solid #223750;background:#0b1727;border-radius:14px;padding:15px;margin-bottom:10px}.flighttop{display:flex;justify-content:space-between;gap:15px}.air{display:flex;gap:11px;align-items:center}.airlogo{width:40px;height:40px;border-radius:10px;background:#182b43;display:grid;place-items:center;font-weight:800}.air strong{display:block}.air span{font-size:12px;color:var(--muted)}.price{text-align:right}.price strong{font-size:22px}.price span{display:block;color:var(--muted);font-size:11px}.routeLine{display:flex;align-items:center;gap:10px;margin:15px 0}.time{font-size:17px;font-weight:700}.routeLine .line{height:1px;background:#36506c;flex:1;position:relative}.routeLine .line:after{content:"✈";position:absolute;right:46%;top:-9px;color:#6daef0;font-size:13px}.meta{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:5px 8px;border-radius:7px;background:#102238;color:#a8bdd5;font-size:11px}.flightbottom{display:flex;justify-content:space-between;align-items:center;margin-top:13px}.verified{font-size:11px;color:var(--muted)}.buy{border:0;background:#48d597;color:#061c14;font-weight:800;padding:9px 15px;border-radius:9px;cursor:pointer}.buy:hover{filter:brightness(1.08)}
+.status{display:flex;align-items:center;gap:8px;background:#0c251d;border:1px solid #1c5946;color:#9af0ca;padding:9px;border-radius:10px;font-size:12px;margin-bottom:14px}.metric{padding:12px 0;border-bottom:1px solid #203148}.metric:last-child{border-bottom:0}.metric span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.metric strong{font-size:19px}.good{color:var(--good)}.chart{height:105px;display:flex;align-items:flex-end;gap:6px;margin:16px 0 5px}.bar{flex:1;background:linear-gradient(#55a7ff,#244e7b);border-radius:5px 5px 2px 2px;min-height:12px}.chartlabels{display:flex;justify-content:space-between;color:#657d98;font-size:9px}.legend{font-size:11px;color:var(--muted);line-height:1.5;margin-top:13px}.disclaimer{margin-top:16px;color:#71869f;font-size:11px;line-height:1.5}
+.pricechart{margin-top:16px;border:1px solid #20344c;border-radius:12px;background:#091624;padding:10px}
+.charthead{display:flex;justify-content:space-between;align-items:center;color:#b7c9dd;font-size:12px;margin-bottom:8px}
+.charthead select{background:#102238;border:1px solid #29425d;color:#dceafa;border-radius:7px;padding:5px 7px;font-size:11px}
+.chartbox{height:180px}.chartbox svg{width:100%;height:100%;overflow:visible}
+.chartlabels{display:flex;justify-content:space-between;color:#7188a1;font-size:10px;margin-top:4px}
+.book-options{display:grid;gap:9px;margin:13px 0}.book-option{border:1px solid #29415c;background:#0a1726;border-radius:11px;padding:11px;display:flex;justify-content:space-between;align-items:center;gap:12px}.book-option strong{display:block}.book-option span{font-size:11px;color:#91a8c0}.book-now{border:0;background:#55a7ff;color:#06111e;font-weight:800;border-radius:8px;padding:8px 11px;cursor:pointer}
+
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:18px}.modal.show{display:flex}.modalbox{max-width:500px;width:100%;background:#0d1a2b;border:1px solid #2c4561;border-radius:17px;padding:20px;box-shadow:0 25px 90px #000}.modalbox h3{margin-top:0}.verify{background:#0a1726;border:1px solid #263c55;padding:13px;border-radius:11px;margin:12px 0}.verify strong{font-size:21px}.actions{display:flex;gap:8px;justify-content:flex-end}.secondary{border:1px solid #304861;background:#102238;color:#d9e8fa;padding:9px 14px;border-radius:9px;cursor:pointer}.primary{border:0;background:#55a7ff;color:#07111f;font-weight:800;padding:9px 14px;border-radius:9px;cursor:pointer}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.searchbtn{height:48px}.main{grid-template-columns:1fr}.swap{right:10px}.route{padding-right:0}}@media(max-width:560px){.wrap{padding:18px 12px}.hero h2{font-size:27px}.grid{grid-template-columns:1fr}.top{align-items:flex-start}.badge{display:none}.flighttop{flex-direction:column}.price{text-align:left}.flightbottom{align-items:flex-start;gap:10px;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo">F</div><div><h1>FareShield India</h1><p>Flight price intelligence, not repeated searching</p></div></div>
+    <div class="badge">● Cached-first architecture</div>
+  </header>
+
+  <section class="hero">
+    <h2>Search flights without unnecessary pings.</h2>
+    <p>Compare observed fares with a cache-first Fare Stability Engine. Repeated opens stay local; live verification happens only after you explicitly confirm.</p>
+  </section>
+
+  <section class="search">
+    <div class="tabs"><button class="tab active" onclick="setTrip(this,'One way')">One way</button><button class="tab" onclick="setTrip(this,'Round trip')">Round trip</button></div>
+    <div class="grid">
+      <div class="field route"><label>FROM</label><input id="from" value="BLR" maxlength="3"><button class="swap" onclick="swap()">↔</button></div>
+      <div class="field"><label>TO</label><input id="to" value="GOI" maxlength="3"></div>
+      <div class="field"><label>DEPARTURE</label><input id="date" type="date" value="2026-12-29"></div>
+      <div class="field"><label>PASSENGERS</label><select><option>1 Adult</option><option>2 Adults</option><option>2 Adults, 1 Child</option><option>2 Adults, 1 Child, 1 Infant</option></select></div>
+      <button class="searchbtn" onclick="searchFlights()">SEARCH FLIGHTS</button>
+    </div>
+    <div class="note"><span class="dot"></span> Search page uses stored observations. Live verification is reserved for BUY.</div>
+  </section>
+
+  <section class="main">
+    <div class="panel">
+      <h3 id="resultTitle">BLR → GOI</h3>
+      <div class="sub" id="resultSub">29 Dec 2026 · 1 Adult · Economy · Domestic India</div>
+
+      <div class="flight">
+        <div class="flighttop"><div class="air"><div class="airlogo">6E</div><div><strong>IndiGo</strong><span>Direct · Economy</span></div></div><div class="price"><strong>₹4,760</strong><span>lowest observed</span></div></div>
+        <div class="routeLine"><div><div class="time">06:15</div></div><div class="line"></div><div><div class="time">07:25</div></div></div>
+        <div class="meta"><span class="chip">1h 10m</span><span class="chip">Cabin bag</span><span class="chip">15kg option</span><span class="chip">Refund rules vary</span></div>
+        <div class="flightbottom"><div class="verified">Observed 8 min ago · source: authorized fare feed</div><button class="buy" onclick="buy('IndiGo','₹4,760')">BUY ₹4,760</button></div>
+      </div>
+
+      <div class="flight">
+        <div class="flighttop"><div class="air"><div class="airlogo">AI</div><div><strong>Air India</strong><span>Direct · Economy</span></div></div><div class="price"><strong>₹5,120</strong><span>observed</span></div></div>
+        <div class="routeLine"><div><div class="time">09:10</div></div><div class="line"></div><div><div class="time">10:25</div></div></div>
+        <div class="meta"><span class="chip">1h 15m</span><span class="chip">Cabin bag</span><span class="chip">Baggage varies</span></div>
+        <div class="flightbottom"><div class="verified">Observed 11 min ago · source: authorized fare feed</div><button class="buy" onclick="buy('Air India','₹5,120')">BUY ₹5,120</button></div>
+      </div>
+
+      <div class="flight">
+        <div class="flighttop"><div class="air"><div class="airlogo">QP</div><div><strong>Akasa Air</strong><span>Direct · Economy</span></div></div><div class="price"><strong>₹5,340</strong><span>observed</span></div></div>
+        <div class="routeLine"><div><div class="time">13:40</div></div><div class="line"></div><div><div class="time">14:55</div></div></div>
+        <div class="meta"><span class="chip">1h 15m</span><span class="chip">Cabin bag</span><span class="chip">Fare conditions</span></div>
+        <div class="flightbottom"><div class="verified">Observed 14 min ago · source: authorized fare feed</div><button class="buy" onclick="buy('Akasa Air','₹5,340')">BUY ₹5,340</button></div>
+      </div>
+      
+<div class="panel" style="margin-top:16px">
+  <h3>Controlled Ping Test</h3>
+  <div class="sub">Simulates repeated page opens against the cached observation. No external fare request is made by refresh.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="secondary" onclick="runPingTest(10)">Run 10 cached pings</button>
+    <button class="secondary" onclick="runPingTest(20)">Run 20 cached pings</button>
+    <span id="pingResult" class="verified">Ready. External requests remain unchanged.</span>
+  </div>
+</div>
+
+<div class="disclaimer">Prototype model: production must use permitted airline/NDC/GDS/OTA feeds, controlled refresh limits, fare fingerprinting, and final live confirmation. FareShield cannot guarantee an airline will never change a fare.</div>
+    </div>
+
+    <aside class="panel">
+      <h3>Fare intelligence</h3>
+      <div class="sub">Observed history for this route/date</div>
+      <div class="status">● Price status: LOW</div>
+      <div class="metric"><span>Current lowest observed</span><strong>₹4,760</strong></div>
+      <div class="metric"><span>24-hour observed low</span><strong>₹4,690</strong></div>
+      <div class="metric"><span>7-day observed low</span><strong>₹4,520</strong></div>
+      <div class="metric"><span>30-day observed low</span><strong>₹4,310</strong></div>
+      <div class="metric"><span>Last observation</span><strong>8 min ago</strong></div>
+      
+<div class="panel" style="margin-top:16px">
+  <h3>Fare Stability Engine</h3>
+  <div class="sub">Cache-first monitoring. Repeated page opens do not create new airline searches.</div>
+  <div class="status"><span>●</span><span id="engineStatus">Protected: cached observation</span></div>
+  <div class="metric"><span>External fare requests</span><strong id="externalReq">1</strong></div>
+  <div class="metric"><span>Cached observations</span><strong id="cachedReq">19</strong></div>
+  <div class="metric"><span>Observed fare movement</span><strong id="movement">0 changes</strong></div>
+  <div class="metric"><span>Search-triggered increase</span><strong class="good" id="triggered">Not established</strong></div>
+  <div class="legend">
+    The engine fingerprints flight/date/fare/baggage/price/source observations and distinguishes
+    a real fare movement from a changed fare product or seller. It never claims that a price change
+    was caused by searching unless controlled evidence supports that conclusion.
+  </div>
+</div>
+
+<div class="pricechart">
+        <div class="charthead"><span>Observed price history</span><select id="range" onchange="updateChart()"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select></div>
+        <div class="chartbox"><svg id="priceSvg" viewBox="0 0 600 190" preserveAspectRatio="none" aria-label="Price history graph"></svg></div>
+        <div class="chartlabels"><span id="lowLabel">Low ₹4,310</span><span id="nowLabel">Now ₹4,760</span></div>
+      </div>
+      <div class="legend">Production mode will plot real observed fares by timestamp and source. It will also show when a fare moved between price bands.</div>
+    </aside>
+  </section>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modalbox">
+    <h3>Confirm before booking</h3>
+    <p style="color:#9bb0c8">You chose <b id="chosen"></b>. No booking-site redirect is made until you confirm.</p>
+    <div class="verify"><span>Our latest observed price</span><br><strong id="cached"></strong><br><small style="color:#7f96b0">A live check is required before any booking link is opened.</small></div>
+    <div id="verifyResult" class="verify">Ready for your confirmation.</div>
+    <div class="actions"><button class="secondary" onclick="closeModal()">Cancel</button><button class="primary" onclick="confirmLiveCheck()">Confirm & check live price</button></div>
+  </div>
+</div>
+
+<script>
+function setTrip(el,type){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
+function swap(){let a=document.getElementById('from'),b=document.getElementById('to');[a.value,b.value]=[b.value,a.value];}
+
+const cache = {
+  key: 'BLR-GOI-2026-12-29-1-ECO',
+  price: 4760,
+  observations: 20,
+  externalRequests: 1,
+  cachedRequests: 19,
+  movement: 0,
+  fingerprint: 'BLR|GOI|2026-12-29|1ADT|ECONOMY|BAG-CABIN|REFUNDABLE|4760|DEMO'
+};
+
+function updateEngine(){
+  document.getElementById('externalReq').textContent = cache.externalRequests;
+  document.getElementById('cachedReq').textContent = cache.cachedRequests;
+  document.getElementById('movement').textContent = cache.movement + (cache.movement===1?' change':' changes');
+}
+
+function searchFlights(){
+  let f=document.getElementById('from').value.trim().toUpperCase(),
+      t=document.getElementById('to').value.trim().toUpperCase(),
+      d=document.getElementById('date').value;
+  if(f.length!==3||t.length!==3){
+    alert('Enter valid 3-letter airport codes, for example BLR and GOI.');
+    return;
+  }
+  document.getElementById('resultTitle').textContent=f+' → '+t;
+  document.getElementById('resultSub').textContent=
+    (d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'Select a date')
+    +' · 1 Adult · Economy · Domestic India';
+  document.getElementById('engineStatus').textContent='Protected: showing cached observation';
+  document.getElementById('triggered').textContent='Not established';
+}
+
+const priceSeries={
+  7:[4580,4520,4610,4490,4380,4460,4760],
+  30:[5120,4980,5050,4920,4760,4890,4710,4630,4820,4750,4680,4590,4720,4660,4510,4440,4380,4470,4520,4450,4390,4310,4420,4490,4550,4620,4580,4690,4760,4760],
+  90:[6120,5980,5750,5600,5480,5320,5180,5050,4980,4860,4720,4590,4470,4380,4310,4420,4510,4630,4760]
+};
+
+function drawChart(){
+  const svg=document.getElementById('priceSvg'),
+        vals=priceSeries[document.getElementById('range').value],
+        W=600,H=190,pad=14,
+        min=Math.min(...vals)-80,max=Math.max(...vals)+80;
+  const pts=vals.map((v,i)=>[
+    pad+i*(W-2*pad)/(vals.length-1),
+    H-pad-(v-min)*(H-2*pad)/(max-min)
+  ]);
+  let path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  let area=path+` L ${pts[pts.length-1][0]} ${H-pad} L ${pts[0][0]} ${H-pad} Z`;
+  svg.innerHTML=`<defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-opacity=".30"/><stop offset="1" stop-opacity="0"/></linearGradient></defs>
+  <path d="${area}" fill="url(#fill)"></path><path d="${path}" fill="none" stroke="#55a7ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+  ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#0b1727" stroke="#55a7ff" stroke-width="2"></circle>`).join('')}
+  <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="#263c54"/>
+  <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" stroke="#263c54"/>`;
+  document.getElementById('lowLabel').textContent='Observed low ₹'+Math.min(...vals).toLocaleString('en-IN');
+  document.getElementById('nowLabel').textContent='Latest ₹'+vals[vals.length-1].toLocaleString('en-IN');
+}
+function updateChart(){drawChart();}
+
+let current={};
+
+function buy(airline,price){
+  current={airline,price};
+  document.getElementById('chosen').textContent=airline;
+  document.getElementById('cached').textContent=price;
+  document.getElementById('verifyResult').innerHTML='Ready. <b>Confirm & check live price</b> to contact the booking source.';
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+function confirmLiveCheck(){
+  const r=document.getElementById('verifyResult');
+  r.innerHTML='<span style="color:#ffc857">●</span> Performing the final live fare check…';
+  setTimeout(()=>{
+    const price=current.price;
+    r.innerHTML=`<span style="color:#48d597">●</span> Live fare confirmed for this prototype: <b>${price}</b>.
+      <div class="book-options">
+        <div class="book-option"><div><strong>${current.airline} — Direct</strong><span>Open the airline booking flow</span></div><button class="book-now" onclick="openBooking('Airline')">BOOK</button></div>
+        <div class="book-option"><div><strong>Google Flights — Compare</strong><span>Open Google's vendor options</span></div><button class="book-now" onclick="openBooking('Google Flights')">COMPARE</button></div>
+      </div>
+      <small style="color:#7f96b0">Production mode will replace this prototype result with actual live offers and legitimate booking URLs.</small>`;
+    document.querySelector('.actions').innerHTML='<button class="secondary" onclick="closeModal()">Close</button>';
+  },1100);
+}
+
+function openBooking(source){
+  alert('Prototype only: after live confirmation, this button will open the selected legitimate airline or Google Flights/vendor booking URL. No booking URL is opened before confirmation.');
+}
+
+function runPingTest(count){
+  cache.cachedRequests += count;
+  const result=document.getElementById('pingResult');
+  result.innerHTML=`<span style="color:#48d597">●</span> ${count} cached pings completed. External fare requests remain <b>${cache.externalRequests}</b>.`;
+  document.getElementById('engineStatus').textContent='Protected: repeated pings served from cache';
+  updateEngine();
+}
+
+drawChart();
+updateEngine();
+</script>
+</body>
+</html>
